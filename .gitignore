@@ -64,3 +64,7 @@ data/processed/*.tmp.csv
 logs/
 *.pid
 *.aof
+
+graphify
+graphify-out/
+graphify-out/*
