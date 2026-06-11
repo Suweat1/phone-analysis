@@ -1,1 +1,0 @@
-{"nodes": [{"id": "web.package.json", "label": "web/package.json", "type": "config", "summary": "\u524d\u7aef\u4f9d\u8d56\u6e05\u5355\uff1aVue2 + Element UI + ECharts + axios + vue-router", "source_file": "web/package.json", "source_location": "/Users/earlpan3/projects/i/phone-analysis/web/package.json:1-40", "confidence": "EXTRACTED"}], "edges": [], "hyperedges": []}

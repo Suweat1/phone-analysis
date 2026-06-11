@@ -1,1 +1,0 @@
-{"nodes": [{"id": "web.eslintrc", "label": "web/.eslintrc.js", "type": "config", "summary": "\u524d\u7aef ESLint \u914d\u7f6e\uff08vue/essential + eslint:recommended\uff09", "source_file": "web/.eslintrc.js", "source_location": "/Users/earlpan3/projects/i/phone-analysis/web/.eslintrc.js:1-14", "confidence": "EXTRACTED"}], "edges": [], "hyperedges": []}

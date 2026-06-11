@@ -1,1 +1,0 @@
-{"nodes": [{"id": "web.vue.config", "label": "vue.config.js", "type": "config", "summary": "Vue CLI 5 config: dev server proxies /api to Spring Boot, reads VUE_APP_* env vars", "source_file": "web/vue.config.js", "source_location": "/Users/earlpan3/projects/i/phone-analysis/web/vue.config.js:1-27", "confidence": "EXTRACTED"}], "edges": [], "hyperedges": []}

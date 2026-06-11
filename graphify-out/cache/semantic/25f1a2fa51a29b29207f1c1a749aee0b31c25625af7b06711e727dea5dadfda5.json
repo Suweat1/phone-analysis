@@ -1,1 +1,0 @@
-{"nodes": [{"id": "web.main", "label": "web/src/main.js", "type": "file", "summary": "Vue \u5165\u53e3\uff1a\u6ce8\u518c ElementUI/echarts/$cfg\uff0c\u9884\u70ed\u5b57\u5178\u540e mount #app", "source_file": "web/src/main.js", "source_location": "/Users/earlpan3/projects/i/phone-analysis/web/src/main.js:1-23", "confidence": "EXTRACTED"}], "edges": [], "hyperedges": []}

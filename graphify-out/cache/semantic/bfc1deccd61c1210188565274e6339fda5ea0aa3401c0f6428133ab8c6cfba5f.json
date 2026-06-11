@@ -1,1 +1,0 @@
-{"nodes": [{"id": "web.components.EChart", "label": "EChart.vue", "type": "component", "summary": "ECharts \u901a\u7528\u5305\u88c5\uff1ainit/setOption/resize/dispose", "source_file": "web/src/components/EChart.vue", "source_location": "/Users/earlpan3/projects/i/phone-analysis/web/src/components/EChart.vue:1-31", "confidence": "EXTRACTED"}], "edges": [], "hyperedges": []}

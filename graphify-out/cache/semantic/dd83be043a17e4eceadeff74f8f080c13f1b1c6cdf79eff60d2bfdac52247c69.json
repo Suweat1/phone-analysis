@@ -1,1 +1,0 @@
-{"nodes": [{"id": "app.common.R", "label": "R<T>", "type": "class", "summary": "\u7edf\u4e00 REST \u54cd\u5e94\u5305\u88c5 {code,msg,data}", "source_file": "app/src/main/java/com/phone/app/common/R.java", "source_location": "/Users/earlpan3/projects/i/phone-analysis/app/src/main/java/com/phone/app/common/R.java:L23-L44", "confidence": "EXTRACTED"}], "edges": [], "hyperedges": []}

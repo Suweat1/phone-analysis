@@ -1,1 +1,0 @@
-{"nodes": [{"id": "etl.ColumnDictJob", "label": "ColumnDictJob", "type": "class", "summary": "Spark batch: write ColumnMapping rows to MySQL ads_column_dict", "source_file": "spark-etl/src/main/scala/com/phone/etl/batch/ColumnDictJob.scala", "source_location": "spark-etl/.../batch/ColumnDictJob.scala:19-51", "confidence": "EXTRACTED"}], "edges": [], "hyperedges": []}

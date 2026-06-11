@@ -1,1 +1,0 @@
-{"nodes": [{"id": "web.babel.config", "label": "web/babel.config.js", "type": "config", "summary": "\u524d\u7aef Babel \u9884\u8bbe\uff08@vue/cli-plugin-babel/preset\uff09", "source_file": "web/babel.config.js", "source_location": "/Users/earlpan3/projects/i/phone-analysis/web/babel.config.js:1-3", "confidence": "EXTRACTED"}], "edges": [], "hyperedges": []}
