@@ -1,0 +1,3 @@
+# spark-etl 资源目录占位
+# Typesafe Config 启动时优先读 spark-submit --files 分发的 ./application.properties；
+# 单测 / IDE 调试时会回退到本目录下的同名文件（按需补充）。

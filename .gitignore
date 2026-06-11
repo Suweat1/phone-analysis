@@ -1,0 +1,66 @@
+# ===== 系统 =====
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# ===== IDE =====
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+.project
+.classpath
+.settings/
+
+# ===== Java / Maven =====
+target/
+*.class
+*.jar
+*.war
+*.ear
+*.log
+hs_err_pid*
+.mvn/
+mvnw
+mvnw.cmd
+
+# ===== Scala / Spark =====
+.bsp/
+.bloop/
+.metals/
+project/target/
+project/project/
+spark-warehouse/
+metastore_db/
+derby.log
+
+# ===== Node / Vue =====
+node_modules/
+dist/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
+.cache/
+
+# ===== Python（预处理脚本） =====
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+.pytest_cache/
+
+# ===== 项目自身约定 =====
+# 预处理中间产物（不进仓）：临时 csv / 调试 dump
+data/processed/_tmp/
+data/processed/*.tmp.csv
+# 真正进仓的最终 parquet 用 git lfs 或显式 add，下面不忽略
+
+# ===== 部署/运行期产物（理论上不会在本机出现，仍兜底） =====
+logs/
+*.pid
+*.aof

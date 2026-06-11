@@ -1,0 +1,1 @@
+{"nodes": [{"id": "config.spark-env", "label": "spark-env.sh", "type": "config", "summary": "Spark 3.3.1 env: YARN/HADOOP confs, history server on 18080, MySQL JDBC on classpath", "source_file": "config/spark/spark-env.sh", "source_location": "/Users/earlpan3/projects/i/phone-analysis/config/spark/spark-env.sh:1-19", "confidence": "EXTRACTED"}], "edges": [], "hyperedges": []}

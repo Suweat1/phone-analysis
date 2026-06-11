@@ -1,0 +1,1 @@
+{"nodes": [{"id": "doc.README.app", "label": "app/README.md", "type": "file", "summary": "Spring Boot app skeleton placeholder describing responsibilities, config source, TODO", "source_file": "app/README.md", "source_location": "/Users/earlpan3/projects/i/phone-analysis/app/README.md", "confidence": "EXTRACTED"}], "edges": [], "hyperedges": []}

@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+<!--
+  Hadoop hdfs-site.xml — phone-analysis
+  部署目标：$HADOOP_HOME/etc/hadoop/hdfs-site.xml
+  详细说明见 docs/deploy/04-hadoop.md
+-->
+<configuration>
+
+  <!-- 单节点：副本数为 1 -->
+  <property>
+    <name>dfs.replication</name>
+    <value>1</value>
+  </property>
+
+  <!-- NameNode 元数据 -->
+  <property>
+    <name>dfs.namenode.name.dir</name>
+    <value>file:///opt/bigdata/data/hadoop/nn</value>
+  </property>
+
+  <!-- DataNode 数据块 -->
+  <property>
+    <name>dfs.datanode.data.dir</name>
+    <value>file:///opt/bigdata/data/hadoop/dn</value>
+  </property>
+
+  <!-- 开发期关闭权限校验，避免 Spring Boot / Spark 误用账号 -->
+  <property>
+    <name>dfs.permissions.enabled</name>
+    <value>false</value>
+  </property>
+
+  <!-- 启用 WebHDFS（看板调试用） -->
+  <property>
+    <name>dfs.webhdfs.enabled</name>
+    <value>true</value>
+  </property>
+
+  <!-- NameNode HTTP / RPC -->
+  <property>
+    <name>dfs.namenode.http-address</name>
+    <value>phone-analysis:9870</value>
+  </property>
+  <property>
+    <name>dfs.namenode.rpc-address</name>
+    <value>phone-analysis:9000</value>
+  </property>
+
+  <!-- SecondaryNameNode 同机 -->
+  <property>
+    <name>dfs.namenode.secondary.http-address</name>
+    <value>phone-analysis:9868</value>
+  </property>
+
+</configuration>

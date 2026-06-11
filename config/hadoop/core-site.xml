@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+<!--
+  Hadoop core-site.xml — phone-analysis
+  部署目标：$HADOOP_HOME/etc/hadoop/core-site.xml
+  详细说明见 docs/deploy/04-hadoop.md
+-->
+<configuration>
+
+  <property>
+    <name>fs.defaultFS</name>
+    <value>hdfs://phone-analysis:9000</value>
+  </property>
+
+  <property>
+    <name>hadoop.tmp.dir</name>
+    <value>/opt/bigdata/data/hadoop/tmp</value>
+  </property>
+
+  <!-- 字符集 -->
+  <property>
+    <name>file.encoding</name>
+    <value>UTF-8</value>
+  </property>
+
+  <!-- 让 bigdata 用户可被 Hive/Spark/SpringBoot 代理访问 HDFS -->
+  <property>
+    <name>hadoop.proxyuser.bigdata.hosts</name>
+    <value>*</value>
+  </property>
+  <property>
+    <name>hadoop.proxyuser.bigdata.groups</name>
+    <value>*</value>
+  </property>
+
+  <!-- 回收站：误删保留 1 天（开发期方便） -->
+  <property>
+    <name>fs.trash.interval</name>
+    <value>1440</value>
+  </property>
+
+</configuration>

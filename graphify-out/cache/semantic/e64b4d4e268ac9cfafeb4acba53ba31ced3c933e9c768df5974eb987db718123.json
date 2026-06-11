@@ -1,0 +1,1 @@
+{"nodes": [{"id": "file.web.index-html", "label": "web/public/index.html", "type": "file", "summary": "Vue CLI HTML template with #app mount point and VUE_APP_NAME title", "source_file": "web/public/index.html", "source_location": "/Users/earlpan3/projects/i/phone-analysis/web/public/index.html:L1-L13", "confidence": "EXTRACTED"}], "edges": [], "hyperedges": []}

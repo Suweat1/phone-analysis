@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+<!--
+  Hadoop mapred-site.xml — phone-analysis
+  部署目标：$HADOOP_HOME/etc/hadoop/mapred-site.xml
+  详细说明见 docs/deploy/04-hadoop.md
+-->
+<configuration>
+
+  <property>
+    <name>mapreduce.framework.name</name>
+    <value>yarn</value>
+  </property>
+
+  <!-- 让 YARN container 能找到 mapreduce classpath（Hive on MR 备用） -->
+  <property>
+    <name>mapreduce.application.classpath</name>
+    <value>$HADOOP_MAPRED_HOME/share/hadoop/mapreduce/*:$HADOOP_MAPRED_HOME/share/hadoop/mapreduce/lib/*</value>
+  </property>
+
+  <!-- AM / Map / Reduce JVM 环境 -->
+  <property>
+    <name>yarn.app.mapreduce.am.env</name>
+    <value>HADOOP_MAPRED_HOME=/opt/bigdata/service/hadoop</value>
+  </property>
+  <property>
+    <name>mapreduce.map.env</name>
+    <value>HADOOP_MAPRED_HOME=/opt/bigdata/service/hadoop</value>
+  </property>
+  <property>
+    <name>mapreduce.reduce.env</name>
+    <value>HADOOP_MAPRED_HOME=/opt/bigdata/service/hadoop</value>
+  </property>
+
+  <!-- 单机内存配置 -->
+  <property>
+    <name>mapreduce.map.memory.mb</name>
+    <value>1024</value>
+  </property>
+  <property>
+    <name>mapreduce.reduce.memory.mb</name>
+    <value>1024</value>
+  </property>
+
+</configuration>

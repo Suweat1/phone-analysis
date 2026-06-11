@@ -1,0 +1,1 @@
+{"nodes": [{"id": "config.hive-env", "label": "hive-env.sh", "type": "config", "summary": "Hive 3.1.3 env: HADOOP_HOME, HIVE_CONF_DIR, AUX_JARS, heap, log dir", "source_file": "config/hive/hive-env.sh", "source_location": "/Users/earlpan3/projects/i/phone-analysis/config/hive/hive-env.sh:1-14", "confidence": "EXTRACTED"}], "edges": [], "hyperedges": []}

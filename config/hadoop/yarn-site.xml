@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+<!--
+  Hadoop yarn-site.xml — phone-analysis
+  部署目标：$HADOOP_HOME/etc/hadoop/yarn-site.xml
+  详细说明见 docs/deploy/04-hadoop.md
+-->
+<configuration>
+
+  <property>
+    <name>yarn.resourcemanager.hostname</name>
+    <value>phone-analysis</value>
+  </property>
+
+  <property>
+    <name>yarn.nodemanager.aux-services</name>
+    <value>mapreduce_shuffle</value>
+  </property>
+
+  <!-- 单机伪分布式：关闭物理 / 虚拟内存检查，避免 Spark Driver 被无脑杀掉 -->
+  <property>
+    <name>yarn.nodemanager.pmem-check-enabled</name>
+    <value>false</value>
+  </property>
+  <property>
+    <name>yarn.nodemanager.vmem-check-enabled</name>
+    <value>false</value>
+  </property>
+
+  <!-- 单机资源（按虚拟机实际调大调小） -->
+  <property>
+    <name>yarn.nodemanager.resource.memory-mb</name>
+    <value>6144</value>
+  </property>
+  <property>
+    <name>yarn.nodemanager.resource.cpu-vcores</name>
+    <value>4</value>
+  </property>
+  <property>
+    <name>yarn.scheduler.minimum-allocation-mb</name>
+    <value>512</value>
+  </property>
+  <property>
+    <name>yarn.scheduler.maximum-allocation-mb</name>
+    <value>4096</value>
+  </property>
+
+  <!-- 让 Spark 作业能读到 Hadoop 类路径 -->
+  <property>
+    <name>yarn.application.classpath</name>
+    <value>$HADOOP_CONF_DIR,$HADOOP_COMMON_HOME/share/hadoop/common/*,$HADOOP_COMMON_HOME/share/hadoop/common/lib/*,$HADOOP_HDFS_HOME/share/hadoop/hdfs/*,$HADOOP_HDFS_HOME/share/hadoop/hdfs/lib/*,$HADOOP_YARN_HOME/share/hadoop/yarn/*,$HADOOP_YARN_HOME/share/hadoop/yarn/lib/*,$HADOOP_MAPRED_HOME/share/hadoop/mapreduce/*,$HADOOP_MAPRED_HOME/share/hadoop/mapreduce/lib/*</value>
+  </property>
+
+  <!-- 日志聚合（看板调试方便） -->
+  <property>
+    <name>yarn.log-aggregation-enable</name>
+    <value>true</value>
+  </property>
+  <property>
+    <name>yarn.log-aggregation.retain-seconds</name>
+    <value>604800</value>
+  </property>
+
+</configuration>

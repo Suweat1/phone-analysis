@@ -1,0 +1,198 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+                             http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.phone</groupId>
+        <artifactId>phone-analysis-parent</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+
+    <artifactId>phone-analysis-spark-etl</artifactId>
+    <packaging>jar</packaging>
+    <name>phone-analysis-spark-etl</name>
+    <description>Scala 2.12 + Spark SQL 3.3.1 ETL & Streaming for phone-analysis</description>
+
+    <dependencies>
+
+        <!-- ============ Scala ============ -->
+        <dependency>
+            <groupId>org.scala-lang</groupId>
+            <artifactId>scala-library</artifactId>
+            <version>${scala.version}</version>
+            <!-- 运行机 Spark 已自带 scala，避免 fat jar 冲突 -->
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- ============ Spark Core / SQL / Hive (provided：spark-submit 时由集群提供) ============ -->
+        <dependency>
+            <groupId>org.apache.spark</groupId>
+            <artifactId>spark-core_${scala.binary.version}</artifactId>
+            <version>${spark.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.spark</groupId>
+            <artifactId>spark-sql_${scala.binary.version}</artifactId>
+            <version>${spark.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.spark</groupId>
+            <artifactId>spark-hive_${scala.binary.version}</artifactId>
+            <version>${spark.version}</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- ============ Structured Streaming + Kafka ============ -->
+        <!-- 这两个 jar 已按 docs/deploy/07-spark.md 复制到 $SPARK_HOME/jars/，仍声明便于 IDE 解析 -->
+        <dependency>
+            <groupId>org.apache.spark</groupId>
+            <artifactId>spark-sql-kafka-0-10_${scala.binary.version}</artifactId>
+            <version>${spark.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.spark</groupId>
+            <artifactId>spark-token-provider-kafka-0-10_${scala.binary.version}</artifactId>
+            <version>${spark.version}</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- ============ MLlib (异常检测/潜力评分) ============ -->
+        <dependency>
+            <groupId>org.apache.spark</groupId>
+            <artifactId>spark-mllib_${scala.binary.version}</artifactId>
+            <version>${spark.version}</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- ============ Hadoop (provided) ============ -->
+        <dependency>
+            <groupId>org.apache.hadoop</groupId>
+            <artifactId>hadoop-client</artifactId>
+            <version>${hadoop.version}</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- ============ MySQL JDBC (打进 fat jar，确保 DwsToAds 写 MySQL 不缺) ============ -->
+        <dependency>
+            <groupId>mysql</groupId>
+            <artifactId>mysql-connector-java</artifactId>
+            <version>${mysql.connector.version}</version>
+        </dependency>
+
+        <!-- ============ 配置加载 ============ -->
+        <dependency>
+            <groupId>com.typesafe</groupId>
+            <artifactId>config</artifactId>
+            <version>1.4.2</version>
+        </dependency>
+
+        <!-- ============ 日志 ============ -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>1.7.36</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- ============ 测试 ============ -->
+        <dependency>
+            <groupId>org.scalatest</groupId>
+            <artifactId>scalatest_${scala.binary.version}</artifactId>
+            <version>3.2.17</version>
+            <scope>test</scope>
+        </dependency>
+
+    </dependencies>
+
+    <build>
+        <finalName>phone-analysis-spark-etl</finalName>
+        <sourceDirectory>src/main/scala</sourceDirectory>
+        <testSourceDirectory>src/test/scala</testSourceDirectory>
+        <plugins>
+
+            <!-- Scala 编译 -->
+            <plugin>
+                <groupId>net.alchim31.maven</groupId>
+                <artifactId>scala-maven-plugin</artifactId>
+                <version>4.8.1</version>
+                <executions>
+                    <execution>
+                        <id>scala-compile</id>
+                        <phase>compile</phase>
+                        <goals><goal>compile</goal></goals>
+                    </execution>
+                    <execution>
+                        <id>scala-test-compile</id>
+                        <phase>test-compile</phase>
+                        <goals><goal>testCompile</goal></goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <scalaVersion>${scala.version}</scalaVersion>
+                    <args>
+                        <arg>-target:jvm-1.8</arg>
+                        <arg>-deprecation</arg>
+                        <arg>-feature</arg>
+                    </args>
+                </configuration>
+            </plugin>
+
+            <!-- ScalaTest 运行器：让 mvn test 能跑 *Test.scala -->
+            <plugin>
+                <groupId>org.scalatest</groupId>
+                <artifactId>scalatest-maven-plugin</artifactId>
+                <version>2.2.0</version>
+                <configuration>
+                    <reportsDirectory>${project.build.directory}/scalatest-reports</reportsDirectory>
+                    <junitxml>.</junitxml>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>scalatest</id>
+                        <phase>test</phase>
+                        <goals><goal>test</goal></goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- Fat jar：把业务代码 + 非 provided 依赖打进去 -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>3.5.1</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals><goal>shade</goal></goals>
+                        <configuration>
+                            <createDependencyReducedPom>false</createDependencyReducedPom>
+                            <filters>
+                                <filter>
+                                    <artifact>*:*</artifact>
+                                    <excludes>
+                                        <exclude>META-INF/*.SF</exclude>
+                                        <exclude>META-INF/*.DSA</exclude>
+                                        <exclude>META-INF/*.RSA</exclude>
+                                    </excludes>
+                                </filter>
+                            </filters>
+                            <transformers>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+                            </transformers>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+        </plugins>
+    </build>
+
+</project>

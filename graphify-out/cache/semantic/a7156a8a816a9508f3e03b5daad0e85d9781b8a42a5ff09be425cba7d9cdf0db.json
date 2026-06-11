@@ -1,0 +1,1 @@
+{"nodes": [{"id": "etl.RawToOdsJob", "label": "RawToOdsJob", "type": "class", "summary": "Spark batch: MSCK REPAIR ods_phone_sales to pick up HDFS parquet partitions", "source_file": "spark-etl/src/main/scala/com/phone/etl/batch/RawToOdsJob.scala", "source_location": "spark-etl/.../batch/RawToOdsJob.scala:17-26", "confidence": "EXTRACTED"}], "edges": [], "hyperedges": []}

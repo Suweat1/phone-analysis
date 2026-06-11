@@ -1,0 +1,1 @@
+{"nodes": [{"id": "doc.README.config", "label": "config/README.md", "type": "file", "summary": "Single-source-of-truth principle for project configs and per-component deploy paths", "source_file": "config/README.md", "source_location": "/Users/earlpan3/projects/i/phone-analysis/config/README.md", "confidence": "EXTRACTED"}], "edges": [], "hyperedges": []}

@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+<!--
+  Hive 3.1.3 — phone-analysis
+  部署目标：$HIVE_HOME/conf/hive-site.xml
+  详细说明见 docs/deploy/05-hive.md
+-->
+<configuration>
+
+  <!-- ============ 元数据库 (MySQL 8.0.31) ============ -->
+  <property>
+    <name>javax.jdo.option.ConnectionURL</name>
+    <value>jdbc:mysql://phone-analysis:3306/hive_metastore?useSSL=false&amp;useUnicode=true&amp;characterEncoding=UTF-8&amp;serverTimezone=Asia/Shanghai&amp;allowPublicKeyRetrieval=true</value>
+  </property>
+  <property>
+    <name>javax.jdo.option.ConnectionDriverName</name>
+    <value>com.mysql.cj.jdbc.Driver</value>
+  </property>
+  <property>
+    <name>javax.jdo.option.ConnectionUserName</name>
+    <value>hive</value>
+  </property>
+  <property>
+    <name>javax.jdo.option.ConnectionPassword</name>
+    <value>123456</value>
+  </property>
+
+  <!-- ============ 仓库目录 ============ -->
+  <property>
+    <name>hive.metastore.warehouse.dir</name>
+    <value>/user/hive/warehouse</value>
+  </property>
+
+  <!-- ============ Remote Metastore：Spark / HS2 通过 thrift 连接 ============ -->
+  <property>
+    <name>hive.metastore.uris</name>
+    <value>thrift://phone-analysis:9083</value>
+  </property>
+
+  <!-- ============ HiveServer2 ============ -->
+  <property>
+    <name>hive.server2.thrift.bind.host</name>
+    <value>phone-analysis</value>
+  </property>
+  <property>
+    <name>hive.server2.thrift.port</name>
+    <value>10000</value>
+  </property>
+  <property>
+    <name>hive.server2.webui.host</name>
+    <value>phone-analysis</value>
+  </property>
+  <property>
+    <name>hive.server2.webui.port</name>
+    <value>10002</value>
+  </property>
+  <!-- 关闭 doAs：所有 HS2 操作以启动者 (bigdata) 身份执行，避免代理用户报错 -->
+  <property>
+    <name>hive.server2.enable.doAs</name>
+    <value>false</value>
+  </property>
+
+  <!-- ============ 关闭强校验，让 schematool 主导建表 ============ -->
+  <property>
+    <name>hive.metastore.schema.verification</name>
+    <value>false</value>
+  </property>
+  <property>
+    <name>datanucleus.schema.autoCreateAll</name>
+    <value>true</value>
+  </property>
+
+  <!-- ============ 执行引擎 ============ -->
+  <!-- Spark on Hive 是主路径；HiveCLI 仍用默认 MR 作为备用 -->
+  <property>
+    <name>hive.execution.engine</name>
+    <value>mr</value>
+  </property>
+
+</configuration>

@@ -1,0 +1,4 @@
+# app 资源目录
+# 真实 application.yml 放在仓库 config/app/application.yml；
+# 部署时通过 `--spring.config.location=file:.../config/app/application.yml` 指定。
+# 这里只放 MyBatis-Plus 的 mapper xml（暂无）等运行期必要资源。

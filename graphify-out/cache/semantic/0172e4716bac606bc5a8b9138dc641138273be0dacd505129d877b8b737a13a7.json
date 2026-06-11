@@ -1,0 +1,1 @@
+{"nodes": [{"id": "doc.deploy.04", "label": "04-hadoop.md", "type": "file", "summary": "Hadoop 3.3.4 HDFS+YARN pseudo-distributed deploy with NN/DN/RM/NM on phone-analysis", "source_file": "docs/deploy/04-hadoop.md", "source_location": "/Users/earlpan3/projects/i/phone-analysis/docs/deploy/04-hadoop.md", "confidence": "EXTRACTED"}], "edges": [], "hyperedges": []}

@@ -1,0 +1,40 @@
+{
+  "name": "phone-analysis-web",
+  "version": "1.0.0",
+  "private": true,
+  "description": "phone-analysis 可视化看板（Vue 2 + Element UI + ECharts）",
+  "scripts": {
+    "serve": "vue-cli-service serve",
+    "build": "vue-cli-service build",
+    "lint":  "vue-cli-service lint --no-fix"
+  },
+  "dependencies": {
+    "axios": "^0.27.2",
+    "core-js": "^3.30.0",
+    "echarts": "^5.4.3",
+    "element-ui": "^2.15.14",
+    "vue": "^2.7.16",
+    "vue-router": "^3.6.5"
+  },
+  "devDependencies": {
+    "@vue/cli-plugin-babel": "~5.0.8",
+    "@vue/cli-plugin-eslint": "~5.0.8",
+    "@vue/cli-plugin-router": "~5.0.8",
+    "@vue/cli-service": "~5.0.8",
+    "babel-eslint": "^10.1.0",
+    "eslint": "^7.32.0",
+    "eslint-plugin-vue": "^8.7.1",
+    "sass": "^1.69.5",
+    "sass-loader": "^13.3.2",
+    "vue-template-compiler": "^2.7.16"
+  },
+  "engines": {
+    "node": ">=14"
+  },
+  "browserslist": [
+    "> 1%",
+    "last 2 versions",
+    "not dead",
+    "not ie 11"
+  ]
+}
