@@ -10,6 +10,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -30,26 +31,30 @@ import java.util.concurrent.ThreadLocalRandom;
 public class EventSimulator {
 
     /** 与原始 Excel 中观察到的真实值保持相近，便于 Spark 端 schema 一致 */
-    private static final List<String> BRANDS = List.of("小米", "vivo", "OPPO", "华为", "苹果", "荣耀", "三星", "realme");
+    private static final List<String> BRANDS = Arrays.asList(
+            "小米", "vivo", "OPPO", "华为", "苹果", "荣耀", "三星", "realme");
 
     /** 真实型号示例（精简，避免列表过长）；不做品牌-机型映射，简化处理 */
-    private static final List<String> MODELS = List.of(
+    private static final List<String> MODELS = Arrays.asList(
             "Xiaomi 13", "Redmi K60", "vivo X90", "OPPO Find X6", "Mate 60",
             "iPhone 15", "Honor 90", "Galaxy S23", "realme GT5");
 
-    private static final List<String> PROCESSORS = List.of(
+    private static final List<String> PROCESSORS = Arrays.asList(
             "骁龙8 Gen2", "骁龙8+ Gen1", "天玑9200", "麒麟9000s", "A17 Pro", "Exynos 2200");
 
-    private static final List<String> PROMOTIONS = List.of("满减", "赠品", "分期", "限时折扣", "无");
+    private static final List<String> PROMOTIONS = Arrays.asList(
+            "满减", "赠品", "分期", "限时折扣", "无");
 
     private static final int[] STORAGES = {128, 256, 512, 1024};
 
-    private static final List<String> CITIES = List.of("北京", "上海", "广州", "深圳", "杭州", "成都",
+    private static final List<String> CITIES = Arrays.asList(
+            "北京", "上海", "广州", "深圳", "杭州", "成都",
             "南京", "武汉", "西安", "重庆");
 
-    private static final List<String> GENDERS = List.of("男", "女");
+    private static final List<String> GENDERS = Arrays.asList("男", "女");
 
-    private static final List<String> MEMBER_LEVELS = List.of("普通", "白银", "黄金", "铂金", "钻石");
+    private static final List<String> MEMBER_LEVELS = Arrays.asList(
+            "普通", "白银", "黄金", "铂金", "钻石");
 
     private final KafkaProducer kafkaProducer;
     private final PhoneConfig cfg;

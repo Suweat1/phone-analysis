@@ -8,6 +8,7 @@ import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -33,9 +34,9 @@ public class AlertController {
     /** 监控埋点 */
     @GetMapping("/_status")
     public R<Map<String, Object>> status() {
-        return R.ok(Map.of(
-                "subscriberCount", alertService.subscriberCount(),
-                "recent", alertService.listRecent().size()
-        ));
+        Map<String, Object> body = new HashMap<>();
+        body.put("subscriberCount", alertService.subscriberCount());
+        body.put("recent", alertService.listRecent().size());
+        return R.ok(body);
     }
 }

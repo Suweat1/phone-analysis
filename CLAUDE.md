@@ -113,6 +113,14 @@ phone-analysis/
 6. **JDK 必须软链接**：`/opt/bigdata/service/jdk` → 实际版本目录，规避小版本升级。
 7. **二进制部署 + Redis 源码编译**：除 Redis 用源码 `make`（官方无预编译），其余组件全部用 tar.gz/tar.xz 预编译包。
 8. **跨组件 jar 冲突需要手动覆盖**（典型：guava / jline / MySQL JDBC）；改动必须更新 `docs/deploy/11-jar-conflicts.md`。
+9. **Java 代码必须 JDK 1.8 兼容**：源码与字节码均锁 1.8（`maven.compiler.source/target=1.8`）。**禁止** 使用 JDK 9+ 引入的 API，常见踩坑：
+   - `List.of(...)` / `Set.of(...)` / `Map.of(...)` → 用 `Arrays.asList(...)` / `Collections.singletonList(...)` / `new HashMap<>(){{ put(k,v); }}`
+   - `var` 局部变量推断 → 显式类型
+   - `String.repeat / lines / strip / isBlank` → Guava `Strings.repeat` 或手写
+   - `Files.readString / writeString` → `new String(Files.readAllBytes(...), UTF_8)`
+   - `Optional.orElseThrow()`（无参重载） → `.orElseThrow(() -> ...)` 或 `.get()`
+   - `Stream.toList()` → `.collect(Collectors.toList())`
+   - 局部 `record` / sealed 类 / switch expression → 普通 class / switch 语句
 
 ## 数仓分层规范（Hive）
 
