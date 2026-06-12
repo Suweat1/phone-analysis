@@ -16,7 +16,7 @@
     <artifactId>phone-analysis-spark-etl</artifactId>
     <packaging>jar</packaging>
     <name>phone-analysis-spark-etl</name>
-    <description>Scala 2.12 + Spark SQL 3.3.1 ETL & Streaming for phone-analysis</description>
+    <description>Scala 2.12 + Spark SQL 3.3.1 ETL &amp; Streaming for phone-analysis</description>
 
     <dependencies>
 
