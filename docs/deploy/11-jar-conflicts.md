@@ -125,6 +125,29 @@ Hadoop / Hive / Spark 均自带各自版本的 `slf4j` 和 `log4j`，**不要** 
 
 `app/pom.xml` 已按此配置，改动时不要再回退到 `<classifier>standalone</classifier>`。
 
+### 7.1 排掉 jsp-api 后又掉进 `NoClassDefFoundError: JspFactory`
+
+把 `javax.servlet.jsp:*` 整个排掉（前文 exclusions）后，Spring Boot 启动会改报：
+
+```
+ERROR org.apache.catalina.core ... Servlet.init() for servlet [jsp] threw exception
+java.lang.NoClassDefFoundError: javax/servlet/jsp/JspFactory
+  at org.apache.jasper.servlet.JspServlet.init(JspServlet.java:159)
+```
+
+原因是 Tomcat embed 默认会注册一个 `jsp` servlet，初始化时去找 `JspFactory`，但 jsp-api 被我们随 hive 一起排掉了。
+
+本项目是纯 REST + SSE，**不需要** JSP，最干净的修法是关掉 jsp servlet 注册（`app/src/main/resources/application.yml`）：
+
+```yaml
+server:
+  servlet:
+    jsp:
+      registered: false
+```
+
+如此 jsp servlet 完全不 init，链路彻底跳开。**不要**为了消错把 jsp-api 又补回来 —— 一旦 jsp-api / jasper 进 classpath，旧 hive 版的 jasper / tomcat 又有可能借机回流。
+
 ## 8. 常见报错速查
 
 | 报错关键字 | 根因 | 处理 |
@@ -139,7 +162,8 @@ Hadoop / Hive / Spark 均自带各自版本的 `slf4j` 和 `log4j`，**不要** 
 | `org.apache.hadoop.hive.metastore.api.MetaException: Version information not found` | Hive schema 未初始化 | `schematool -dbType mysql -initSchema` |
 | `Connection refused: phone-analysis/127.0.1.1:9092` | Kafka `advertised.listeners` 写成 localhost | 改为 `phone-analysis` |
 | `Permission denied: user=dr.who` | HDFS 用错用户 | core-site.xml 已配 proxyuser，否则用 `hdfs dfs -chmod 777` 临时放行 |
-| `AbstractMethodError: TldScannerCallback.scan(Lorg/apache/tomcat/Jar;...)V` | `hive-jdbc` 用了 `standalone` classifier，shade 进旧 Tomcat 与 Spring Boot 自带 Tomcat 9.x 接口不兼容 | §7 改普通 `hive-jdbc` + 精准 exclusions |
+| `AbstractMethodError: TldScannerCallback.scan(Lorg/apache/tomcat/Jar;...)V` | `hive-jdbc` 用了 `standalone` classifier，shade 进旧 Tomcat 与 Spring Boot 自带 Tomcat 9.x 接口不兼容；或者老 groupId `tomcat` (Tomcat 5.5 时代) 的 jasper-compiler-5.5.23 通过 hive-service 拖进来 | §7 改普通 `hive-jdbc` + 精准 exclusions（包括老 groupId `tomcat` 与 `org.mortbay.jetty`） |
+| `NoClassDefFoundError: javax/servlet/jsp/JspFactory` 在 Tomcat 启 jsp servlet 时 | exclusions 把 `javax.servlet.jsp:*` 也排掉了（必须排，否则旧 jsp-api 回流），结果默认注册的 jsp servlet 找不到 JspFactory | §7.1 在 application.yml 加 `server.servlet.jsp.registered: false` 关掉 jsp servlet（项目是纯 REST/SSE，不需要 JSP） |
 
 ## 9. 整理 jar 改动的纪律
 

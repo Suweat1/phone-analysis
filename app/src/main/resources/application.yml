@@ -14,6 +14,14 @@ server:
   port: 8080
   servlet:
     context-path: /api
+    # 纯 REST + SSE 应用，禁用 JSP servlet 注册。
+    # 否则 Spring Boot embedded Tomcat 启动期会 init JspServlet → 需要
+    # javax.servlet.jsp.JspFactory，而 hive-jdbc 排除链里我们已把
+    # `javax.servlet.jsp:*` 整个排掉（避免引入旧 jsp-api 与 jasper 冲突），
+    # 结果触发 NoClassDefFoundError: javax/servlet/jsp/JspFactory。
+    # 不注册 jsp servlet 即可彻底绕开此初始化路径。
+    jsp:
+      registered: false
 
 spring:
   application:
