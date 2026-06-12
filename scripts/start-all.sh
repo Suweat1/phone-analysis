@@ -8,7 +8,10 @@ set -eo pipefail
 cd "$(dirname "$0")"
 . "./lib/env.sh"
 
-ORDER=(mysql redis hdfs yarn metastore hiveserver2 zk kafka spark-history app)
+ORDER=(mysql redis hdfs metastore hiveserver2 zk kafka app)
+# 注：local 模式跑 Spark 不需要 YARN/spark-history。
+# 如确需 YARN（例如切回 yarn client）：bash start-all.sh --only yarn,spark-history
+ALL_KNOWN=(mysql redis hdfs yarn metastore hiveserver2 zk kafka spark-history app)
 ONLY=""; SKIP=""
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -25,6 +28,18 @@ EOF
 done
 
 in_csv () { case ",$1," in *",$2,"*) return 0 ;; esac; return 1; }
+
+# 当 --only 指定了 YARN/spark-history 时，把它们插回 ORDER（按依赖序）
+if [ -n "$ONLY" ]; then
+  for extra in yarn spark-history; do
+    if in_csv "$ONLY" "$extra" && ! in_csv "$(IFS=,; echo "${ORDER[*]}")" "$extra"; then
+      case "$extra" in
+        yarn)          ORDER=(${ORDER[@]/hdfs/hdfs yarn}) ;;
+        spark-history) ORDER=("${ORDER[@]}" spark-history) ;;
+      esac
+    fi
+  done
+fi
 
 want () {
   local c="$1"

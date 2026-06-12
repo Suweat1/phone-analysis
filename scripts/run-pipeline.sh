@@ -44,10 +44,9 @@ fi
 submit () {
   local cls="$1" desc="$2"
   msg_info "spark-submit ${cls}  (${desc})"
-  # application.properties 已在 jar/classpath 内，默认不需要 --files。
-  # 如运行机端要覆盖，加：--files ${PA_REPO}/config/spark-etl/application.properties
+  # spark.master 在 application.properties / spark-defaults.conf 里已设为 local[*]，
+  # 此处不再覆盖。如要切回 YARN，改这两个文件即可。
   spark-submit \
-    --master yarn --deploy-mode client \
     --class "$cls" \
     "$ETL_JAR"
   msg_ok "${cls} 完成"

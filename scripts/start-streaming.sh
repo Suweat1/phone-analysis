@@ -18,7 +18,6 @@ fi
 
 msg_info "spark-submit RawStreamingJob → ${LOG_FILE}"
 nohup spark-submit \
-  --master yarn --deploy-mode client \
   --class com.phone.etl.streaming.RawStreamingJob \
   --conf spark.streaming.stopGracefullyOnShutdown=true \
   --files "${PA_REPO}/config/spark-etl/application.properties" \
