@@ -28,34 +28,31 @@ cp /opt/bigdata/software/mysql-connector-java-8.0.31.jar $HIVE_HOME/lib/
 
 ## 3. Spark ↔ Hive
 
-Spark 3.3.1 内嵌的 Hive client 是 **2.3.9**，运行机 Metastore 是 **3.1.3**。直接连会报：
+Spark 3.3.1 内嵌的 Hive client 是 **2.3.9**，运行机 Metastore 是 **3.1.3**。
+
+**Hive thrift 协议向后兼容：用 2.3.9 client 连 3.1.3 metastore 是可以的**，这是 Spark 官方推荐做法。
+直接 `spark.sql.hive.metastore.version=2.3.9 + jars=builtin` 即可——这是默认值，不需要任何配置。
 
 ```
-java.lang.IllegalArgumentException: Builtin jars can only be used when
-hive execution version == hive metastore version. Execution: 2.3.9 != Metastore: 3.1.3.
+# config/spark/spark-defaults.conf
+spark.sql.hive.metastore.version 2.3.9
+spark.sql.hive.metastore.jars    builtin
 ```
 
-正解：让 Spark 加载真实的 Hive 3.1.3 lib 作 metastore client。`config/spark/spark-defaults.conf` 已写：
+⚠️ **不要** 配成 `version=3.1.3 + jars=path`。Spark 会把 `$HIVE_HOME/lib/` 下 200+ Hive 3.1.3 jar 加载到隔离 classloader 当 Hive client。在 8GB VM 这套庞大 client 又慢又脆，碰到 `getTable` 这类常见调用就 read timeout（默认 10 分钟），让作业看起来一直卡死。
 
-```
-spark.sql.hive.metastore.version    3.1.3
-spark.sql.hive.metastore.jars       path
-spark.sql.hive.metastore.jars.path  file:///opt/bigdata/service/hive/lib/*.jar
-```
+如果在某些边缘场景确实必须 3.1.3 client（极少见），那种情况下要：
+- VM 内存 ≥ 16GB；
+- 同时配 `spark.sql.hive.metastore.sharedPrefixes` 把 hive/hadoop 共享类排除以避免反射坑。
 
-注意：
-- `spark.sql.hive.metastore.jars=builtin` **只能** 在 version=2.3.9 时用，否则版本不匹配。
-- 路径必须 `file://` 协议且以 `/*.jar` 结尾（通配整个目录）。
-- 同时配上 `hive-site.xml` 和 MySQL JDBC：
+`hive-site.xml` 和 MySQL JDBC 仍要在 Spark 端可见：
 
 ```bash
 ln -sfn $HIVE_HOME/conf/hive-site.xml $SPARK_HOME/conf/hive-site.xml
 cp /opt/bigdata/software/mysql-connector-java-8.0.31.jar $SPARK_HOME/jars/
 ```
 
-`spark-defaults.conf` 中已设置 `spark.sql.catalogImplementation=hive`。
-
-> 不要把 `$HIVE_HOME/lib/*` 整个塞进 `$SPARK_HOME/jars/`，会引入 `datanucleus-*` 与 Spark 自带 `derby` 的循环引用，导致 Driver 启动报 `java.lang.IncompatibleClassChangeError`。**正确方式是用上面的 `metastore.jars.path` 让 Spark 在隔离 classloader 里加载，不污染主 classpath。**
+> 不要把 `$HIVE_HOME/lib/*` 整个塞进 `$SPARK_HOME/jars/`，会引入 `datanucleus-*` 与 Spark 自带 `derby` 的循环引用，导致 Driver 启动报 `java.lang.IncompatibleClassChangeError`。
 
 ## 4. Spark ↔ Kafka
 
@@ -107,7 +104,8 @@ Spring Boot 应用通过 `hive-jdbc-3.1.3` 连 HiveServer2 时，会拉入 `org.
 
 | 报错关键字 | 根因 | 处理 |
 |---|---|---|
-| `Builtin jars can only be used when hive execution version == hive metastore version. Execution: 2.3.9 != Metastore: 3.1.3` | Spark 内置 Hive 2.3.9 ≠ 运行机 Hive 3.1.3 | §3 改 `metastore.jars=path` 指向 Hive lib |
+| `Builtin jars can only be used when hive execution version == hive metastore version. Execution: 2.3.9 != Metastore: 3.1.3` | 显式写了 `metastore.version=3.1.3` 又用 `jars=builtin`（builtin 只能配 2.3.9） | §3 把 version 改回 2.3.9，jars 保持 builtin（thrift 协议兼容） |
+| Spark 启动后 metastore 调用永远卡 10 分钟超时 / `Read timed out` | `metastore.jars=path` 把 200+ Hive 3.1.3 jar 加载隔离 classloader，对 8GB VM 太重 | §3 同上：换回 2.3.9 builtin |
 | `NoSuchMethodError: com.google.common.base.Preconditions` | Hive guava 19 vs Hadoop guava 27 | 替换 §1 |
 | `unsupported major.minor version 55.0` | 误用了 JDK 11 | 检查 `java -version` |
 | `Public Key Retrieval is not allowed` | MySQL 8 + `useSSL=false` 缺参数 | URL 加 `allowPublicKeyRetrieval=true` |
