@@ -27,14 +27,16 @@
     <value>false</value>
   </property>
 
-  <!-- 单机资源（按虚拟机实际调大调小） -->
+  <!-- 单机伪分布式 8GB 物理内存：
+       OS + 其它服务（MySQL/Redis/HDFS/Hive/Kafka/ZK/RM/NM）已经吃 ~5.5GB，
+       YARN 留 2.5GB 跑 driver+executor 即可（数据集仅 20000 行） -->
   <property>
     <name>yarn.nodemanager.resource.memory-mb</name>
-    <value>6144</value>
+    <value>2560</value>
   </property>
   <property>
     <name>yarn.nodemanager.resource.cpu-vcores</name>
-    <value>4</value>
+    <value>2</value>
   </property>
   <property>
     <name>yarn.scheduler.minimum-allocation-mb</name>
@@ -42,7 +44,7 @@
   </property>
   <property>
     <name>yarn.scheduler.maximum-allocation-mb</name>
-    <value>4096</value>
+    <value>2048</value>
   </property>
 
   <!-- 让 Spark 作业能读到 Hadoop 类路径 -->
