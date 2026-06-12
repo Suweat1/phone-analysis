@@ -121,6 +121,11 @@ phone-analysis/
    - `Optional.orElseThrow()`（无参重载） → `.orElseThrow(() -> ...)` 或 `.get()`
    - `Stream.toList()` → `.collect(Collectors.toList())`
    - 局部 `record` / sealed 类 / switch expression → 普通 class / switch 语句
+10. **Scala 代码必须 2.12 兼容**：Spark 3.3.1 用 Scala 2.12，**禁止** 使用 2.13+ API：
+    - `scala.util.Using` / `Using.resource` → 手动 `try { src } finally { src.close() }`
+    - `String.linesIterator` → `.split("\n")` 或 `Source.fromString(s).getLines()`
+    - `Stream.toIntOption / toDoubleOption` → `Try(s.toInt).toOption`
+    - **SLF4J 调 `log.info(fmt, args*)` 最多 2 个变参**（重载受限）；超过用字符串插值 `log.info(s"... ${a} ${b} ${c}")`。混用 `:Any` 强转也容易让重载分发出错，统一插值风格更稳。
 
 ## 数仓分层规范（Hive）
 

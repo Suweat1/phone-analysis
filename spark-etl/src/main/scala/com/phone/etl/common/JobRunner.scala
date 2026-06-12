@@ -21,7 +21,7 @@ object JobRunner {
   def run(jobName: String)(body: SparkSession => Unit): Unit = {
     val spark = SparkSessionFactory.build(jobName)
     val start = System.currentTimeMillis()
-    log.info("============ [{}] START ============", jobName)
+    log.info(s"============ [$jobName] START ============")
     try {
       // 动态分区（DWD 按月分区，必须开）
       spark.conf.set("hive.exec.dynamic.partition", "true")
@@ -30,7 +30,7 @@ object JobRunner {
 
       body(spark)
       val cost = System.currentTimeMillis() - start
-      log.info("============ [{}] OK in {} ms ============", jobName, cost)
+      log.info(s"============ [$jobName] OK in $cost ms ============")
     } catch {
       case e: Throwable =>
         log.error(s"[$jobName] FAIL: ${e.getMessage}", e)
@@ -48,11 +48,10 @@ object JobRunner {
 
   /** 仅供日志：把 PhoneConfig 的关键参数打一次，方便排查 */
   def printContext(): Unit = {
-    log.info("hdfs.namenode = {}", PhoneConfig.Hdfs.namenode)
-    log.info("hive.ods/dwd/dws/ads = {}/{}/{}/{}",
-      PhoneConfig.Hive.odsDb, PhoneConfig.Hive.dwdDb,
-      PhoneConfig.Hive.dwsDb, PhoneConfig.Hive.adsDb)
-    log.info("mysql.url = {}", PhoneConfig.Mysql.url)
-    log.info("kafka.bootstrap = {}", PhoneConfig.Kafka.bootstrapServers)
+    log.info(s"hdfs.namenode = ${PhoneConfig.Hdfs.namenode}")
+    log.info(s"hive.ods/dwd/dws/ads = ${PhoneConfig.Hive.odsDb}/${PhoneConfig.Hive.dwdDb}/" +
+      s"${PhoneConfig.Hive.dwsDb}/${PhoneConfig.Hive.adsDb}")
+    log.info(s"mysql.url = ${PhoneConfig.Mysql.url}")
+    log.info(s"kafka.bootstrap = ${PhoneConfig.Kafka.bootstrapServers}")
   }
 }

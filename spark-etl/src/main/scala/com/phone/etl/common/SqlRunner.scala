@@ -4,7 +4,6 @@ import org.apache.spark.sql.SparkSession
 import org.slf4j.LoggerFactory
 
 import scala.io.{Codec, Source}
-import scala.util.Using
 
 /**
  * 从 classpath 读取 .sql 文件（支持多条 SQL，以 `;` 分隔）并依次执行。
@@ -24,19 +23,18 @@ object SqlRunner {
     val stream = Option(getClass.getClassLoader.getResourceAsStream(resourcePath))
       .getOrElse(throw new IllegalArgumentException(s"resource not found: $resourcePath"))
 
-    val raw = Using.resource(Source.fromInputStream(stream)(Codec.UTF8)) { src =>
-      src.mkString
-    }
+    // 手动 try/finally 管理资源（scala.util.Using 是 Scala 2.13+，本项目锁定 2.12）
+    val src = Source.fromInputStream(stream)(Codec.UTF8)
+    val raw = try src.mkString finally src.close()
     runScript(spark, raw, resourcePath)
   }
 
   /** 直接执行多语句脚本字符串 */
   def runScript(spark: SparkSession, script: String, label: String = "<inline>"): Unit = {
     val statements = splitStatements(script)
-    log.info("[SqlRunner] {} 共 {} 条语句", label, statements.size)
+    log.info(s"[SqlRunner] $label 共 ${statements.size} 条语句")
     statements.zipWithIndex.foreach { case (sql, idx) =>
-      log.info("[SqlRunner] {} [{}/{}] {}",
-        label, idx + 1, statements.size, oneLine(sql, max = 120))
+      log.info(s"[SqlRunner] $label [${idx + 1}/${statements.size}] ${oneLine(sql, max = 120)}")
       spark.sql(sql)
     }
   }
@@ -44,7 +42,7 @@ object SqlRunner {
   /** 拆分：去注释 → 按 `;` 切 → trim 后过滤空串 */
   private[common] def splitStatements(script: String): Seq[String] = {
     val cleaned = script
-      .linesIterator
+      .split("\n")
       .map(stripLineComment)
       .mkString("\n")
     cleaned.split(";")

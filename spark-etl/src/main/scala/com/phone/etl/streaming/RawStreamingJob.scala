@@ -60,8 +60,7 @@ object RawStreamingJob {
     spark.conf.set("hive.exec.dynamic.partition.mode", "nonstrict")
     spark.conf.set("spark.sql.sources.partitionOverwriteMode", "dynamic")
 
-    log.info("[RawStreamingJob] START  kafka={}  topic={}",
-      PhoneConfig.Kafka.bootstrapServers: Any, PhoneConfig.Kafka.topicRaw)
+    log.info(s"[RawStreamingJob] START  kafka=${PhoneConfig.Kafka.bootstrapServers}  topic=${PhoneConfig.Kafka.topicRaw}")
 
     val query = build(spark)
 
@@ -135,7 +134,7 @@ object RawStreamingJob {
    */
   private[streaming] def writeBatch(spark: SparkSession, batch: DataFrame, batchId: Long): Unit = {
     if (batch.isEmpty) {
-      log.info("[batch {}] empty, skip", batchId)
+      log.info(s"[batch $batchId] empty, skip")
       return
     }
 
@@ -149,7 +148,7 @@ object RawStreamingJob {
 
     try {
       val cnt = enriched.count()
-      log.info("[batch {}] {} alerts → kafka & hive", batchId, cnt)
+      log.info(s"[batch $batchId] $cnt alerts → kafka & hive")
 
       // ─── sink 1: Hive ads_realtime_alert ───────────────────────────
       writeHive(spark, enriched)
