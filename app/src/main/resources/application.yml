@@ -1,0 +1,136 @@
+# Spring Boot 2.7.x — phone-analysis-app
+#
+# ┌─────────────────────────────────────────────────────────────────────┐
+# │ 这是 classpath 默认配置，跟随 jar 一起 ship，本机即可 mvn package。 │
+# │ 真实生产值如果要覆盖（比如改密码、改主机名），运行机启动加：        │
+# │   --spring.config.location=classpath:/application.yml,\             │
+# │     file:${HOME}/phone-analysis/config/app/application.yml          │
+# │ Spring 后者优先级更高，会逐字段覆盖。                                │
+# └─────────────────────────────────────────────────────────────────────┘
+# 字段一一对应 com.phone.app.config.PhoneConfig 中的宏变量
+# 修改密码/URL/路径/topic：只动本文件，业务代码无需变更
+
+server:
+  port: 8080
+  servlet:
+    context-path: /api
+
+spring:
+  application:
+    name: phone-analysis-app
+  profiles:
+    active: prod
+
+  # ============ Jackson ============
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: Asia/Shanghai
+    default-property-inclusion: non_null
+
+  # ============ MySQL 数据源 ============
+  datasource:
+    type: com.alibaba.druid.pool.DruidDataSource
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://phone-analysis:3306/phone_analysis?useSSL=false&useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    username: root
+    password: 123456
+    druid:
+      initial-size: 5
+      min-idle: 5
+      max-active: 20
+      max-wait: 60000
+      validation-query: SELECT 1
+      test-while-idle: true
+
+  # ============ Redis ============
+  redis:
+    host: phone-analysis
+    port: 6379
+    password: redis123
+    database: 0
+    timeout: 5000ms
+    lettuce:
+      pool:
+        max-active: 16
+        max-idle: 8
+        min-idle: 2
+        max-wait: 3000ms
+
+  # ============ Kafka ============
+  kafka:
+    bootstrap-servers: phone-analysis:9092
+    producer:
+      acks: 1
+      retries: 3
+      batch-size: 16384
+      buffer-memory: 33554432
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+    consumer:
+      group-id: phone-analysis-app
+      auto-offset-reset: latest
+      enable-auto-commit: false
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+    listener:
+      ack-mode: manual_immediate
+      concurrency: 3
+
+# ============ MyBatis-Plus ============
+mybatis-plus:
+  mapper-locations: classpath*:/mapper/**/*.xml
+  type-aliases-package: com.phone.app.entity
+  configuration:
+    map-underscore-to-camel-case: true
+    cache-enabled: false
+
+# ============ 业务自定义配置：被 PhoneConfig 统一封装为宏变量 ============
+phone:
+  # Hive (Spring Boot 通过 HiveServer2 JDBC 查询 ads 层)
+  hive:
+    jdbc-url: jdbc:hive2://phone-analysis:10000/phone_ads
+    driver: org.apache.hive.jdbc.HiveDriver
+    username: bigdata
+    password: ""    # HS2 配置 doAs=false，无需密码
+    pool-size: 5
+
+  # HDFS 路径（看板下载 / 调试用）
+  hdfs:
+    namenode: hdfs://phone-analysis:9000
+    raw-dir: /phone-analysis/raw
+    ads-dir: /phone-analysis/ads
+
+  # Kafka topic
+  kafka:
+    topic-raw: phone_raw
+    topic-metric: phone_metric
+    topic-alert: phone_alert
+
+  # Redis key 前缀（避免与其他业务共用 Redis 时冲突）
+  redis:
+    key-prefix: "phone:"
+    dashboard-ttl-seconds: 300
+    alert-ttl-seconds: 86400
+
+  # 看板业务参数
+  dashboard:
+    profit-anomaly-threshold: 0.3       # 利润下滑超过 30% 视为异常
+    low-contrib-top-n: 10               # 低贡献机型/渠道 TopN
+    high-value-top-n: 10                # 高价值机型 TopN
+    refresh-interval-seconds: 600       # 看板自动刷新间隔
+
+  # 模拟实时事件生成器（SpringBoot → Kafka phone_raw）
+  simulator:
+    enabled: true
+    interval-ms: 5000                   # 每 5s 一批
+    batch-size: 20                      # 每批 20 条
+    source-parquet: /phone-analysis/raw/phone.parquet  # 取样基础（Spark 侧用，仅作记录）
+
+logging:
+  level:
+    root: INFO
+    com.phone.app: DEBUG
+  file:
+    name: /opt/bigdata/log/app/app.log
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"

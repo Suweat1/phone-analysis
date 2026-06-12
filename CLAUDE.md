@@ -89,17 +89,19 @@ phone-analysis/
 
 **所有模块（app/spark-etl/web）必须遵循以下模式**：
 
-1. **真实参数全部沉淀在配置文件**：
-   - `app/` → `application.yml`（来源：`config/app/application.yml`）
-   - `spark-etl/` → `application.properties`（来源：`config/spark-etl/application.properties`）
-   - `web/` → `.env` 或 `config.js`（来源：`config/web/`）
+1. **应用层真实配置直接放在源码目录**（保证本机 `mvn package` / `npm run build` 可跑、零外置依赖）：
+   - `app/` → `app/src/main/resources/application.yml`（打进 jar 的 classpath）
+   - `spark-etl/` → `spark-etl/src/main/resources/application.properties`（打进 jar 的 classpath，运行机 `--files` 可覆盖）
+   - `web/` → `web/.env`、`web/.env.development`、`web/.env.production`（Vue CLI 默认读这三个）
 2. **代码中存在 `Config` 类**：把配置项映射为「宏变量」，例如：
    - Java：`@ConfigurationProperties("phone")` → `PhoneConfig.mysqlUrl`
    - Scala：`object PhoneConfig { val mysqlUrl: String = conf.getString("phone.mysql.url") }`
-   - Vue：`window.__APP_CONFIG__.apiBase`
+   - Vue：`src/config/index.js` → `this.$cfg.apiBase`
 3. **业务代码只引用宏变量**，**禁止** 在业务代码里硬编码：URL、路径、用户名、密码、端口、HDFS 前缀、Hive 库名、Kafka topic。
-4. **修改密码 / 主机名 / 路径** 只动 `config/` 下文件，不动业务代码。
-5. **配置文件存放在仓库 `config/<组件>/` 下统一管理**，部署时按 `docs/deploy/<组件>.md` 中的命令 `cp` / `ln` 到目标位置；模板里大段注释 **不抄录**，只保留关键参数与必要说明。
+4. **修改密码 / 主机名 / 路径** 只动相应模块的 `src/main/resources/`（或 `web/.env*`）这一份，业务代码不动。
+5. **`config/` 目录只放两类**：
+   - **集群组件配置**（mysql/redis/hadoop/hive/kafka/spark/maven）：由 `scripts/deploy-config.sh` 软链到运行机组件目录。
+   - **应用层覆盖配置（可选）**：`config/app/application.yml`、`config/spark-etl/application.properties` 为运行机特别覆盖模板，用 Spring `spring.config.additional-location` / Spark `--files` 注入；不强制使用。
 
 ## 强制约束（运行机侧）
 

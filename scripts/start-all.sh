@@ -131,8 +131,9 @@ start_app () {
   port_alive "$PORT_APP" && { msg_warn "app 已在 :$PORT_APP"; return 0; }
   [ -f "$APP_JAR" ] || { msg_err "app jar 不存在: $APP_JAR；先跑 build-all.sh"; return 1; }
   msg_info "启动 SpringBoot..."
+  # application.yml 已在 jar/classpath 内（app/src/main/resources/application.yml）。
+  # 如需运行机覆盖，加：--spring.config.additional-location=file:${PA_REPO}/config/app/application.yml
   nohup java -jar "$APP_JAR" \
-    --spring.config.location="file:${PA_REPO}/config/app/application.yml" \
     >"$(log_path app)" 2>&1 &
   echo $! > "$(pid_path app)"
   wait_port "$PORT_APP" app 60

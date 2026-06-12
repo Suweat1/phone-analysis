@@ -1,9 +1,12 @@
 #!/usr/bin/env bash
 # scripts/deploy-config.sh —— git pull 后把 config/<组件>/* 部署到各组件实际路径
 # 设计原则：
-#  - **首选 symlink**：配置只在仓库内一份，组件目录指向仓库；改完 git push 后 git pull 即生效。
+#  - 应用层配置已直接放在 src/main/resources/ 或 web/ 根目录，**不再需要部署**
+#    （app/src/main/resources/application.yml、spark-etl/src/main/resources/application.properties、
+#     web/.env*），mvn package / npm run build 自动带走。
+#  - 本脚本只负责「集群组件配置」：mysql / redis / hadoop / hive / kafka / spark / maven。
+#  - 首选 symlink，组件目录指向仓库；改完 git push 后运行机 git pull 即生效。
 #  - 部分文件 OS 要求绝对路径（如 /etc/my.cnf），用 cp 并备份原文件。
-#  - 不修改任何业务代码；不修改组件二进制目录的内容。
 set -eo pipefail
 cd "$(dirname "$0")"
 . "./lib/env.sh"
@@ -12,8 +15,7 @@ REPO_CONF="${PA_REPO}/config"
 [ -d "$REPO_CONF" ] || { msg_err "仓库配置目录不存在: $REPO_CONF"; exit 1; }
 
 msg_info "目标主机: ${PA_HOST}    用户: ${PA_USER}    仓库: ${PA_REPO}"
-ensure_dir "${PA_LOG}/{mysql,redis,hadoop,hive,kafka,spark,app}" "${PA_PID}" "${PA_JARS}"
-# 上面 brace 在 ensure_dir 里不会展开，单独再做一次
+ensure_dir "${PA_PID}" "${PA_JARS}"
 for c in mysql redis hadoop hive kafka spark app; do
   ensure_dir "${PA_LOG}/${c}"
 done
@@ -76,11 +78,18 @@ done
 ensure_dir "${HOME}/.m2"
 link "${REPO_CONF}/maven/settings.xml" "${HOME}/.m2/settings.xml"
 
-# --------------------- 8. app / spark-etl ----------------------
-# Spring Boot 启动用 --spring.config.location=file:${PA_REPO}/config/app/application.yml
-# Spark ETL 启动用 --files ${PA_REPO}/config/spark-etl/application.properties
-# 不复制，只校验
-[ -f "${REPO_CONF}/app/application.yml" ]              && msg_ok "app/application.yml          present"
-[ -f "${REPO_CONF}/spark-etl/application.properties" ] && msg_ok "spark-etl/application.properties present"
+# --------------------- 8. 应用层配置自检 ----------------------
+# 不再 cp/link；这些文件已直接位于源码目录，构建产物自带
+[ -f "${PA_REPO}/app/src/main/resources/application.yml" ] \
+  && msg_ok "app/src/main/resources/application.yml          present (打进 jar)" \
+  || msg_warn "app application.yml MISSING：请确保 git pull 包含它"
+
+[ -f "${PA_REPO}/spark-etl/src/main/resources/application.properties" ] \
+  && msg_ok "spark-etl/src/main/resources/application.properties present (classpath fallback)" \
+  || msg_warn "spark-etl application.properties MISSING"
+
+[ -f "${PA_REPO}/web/.env" ] \
+  && msg_ok "web/.env*                                       present (Vue CLI 直读)" \
+  || msg_warn "web/.env MISSING：执行 npm run build 会报错"
 
 msg_ok "配置部署完成"

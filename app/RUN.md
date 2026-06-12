@@ -16,9 +16,16 @@ ls app/target/phone-analysis-app.jar
 ```bash
 mkdir -p /opt/bigdata/log/app
 nohup java -jar ~/phone-analysis/app/target/phone-analysis-app.jar \
-  --spring.config.location=file:${HOME}/phone-analysis/config/app/application.yml \
   > /opt/bigdata/log/app/app.log 2>&1 &
 ```
+
+> application.yml 已内置在 jar 中（`app/src/main/resources/application.yml`），无需外部指定。
+> 运行机如需覆盖部分字段（如改密码/主机名），用：
+> ```bash
+> nohup java -jar ~/phone-analysis/app/target/phone-analysis-app.jar \
+>   --spring.config.additional-location=file:${HOME}/phone-analysis/config/app/application.yml \
+>   > /opt/bigdata/log/app/app.log 2>&1 &
+> ```
 
 健康检查：
 

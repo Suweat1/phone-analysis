@@ -7,11 +7,7 @@
 
 ```bash
 cd ~/phone-analysis/web
-# 把仓库 config/web/ 下的 .env 文件软链到本目录，Vue CLI 才能读
-ln -sfn ../config/web/.env             .env
-ln -sfn ../config/web/.env.development .env.development
-ln -sfn ../config/web/.env.production  .env.production
-
+# .env / .env.development / .env.production 已位于 web/ 根目录（提交了 git），Vue CLI 直读
 npm install        # 或 npm ci
 ```
 

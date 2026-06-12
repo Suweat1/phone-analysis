@@ -58,10 +58,7 @@ fi
 if [ "$SKIP_WEB" -eq 0 ]; then
   command -v npm >/dev/null 2>&1 || { msg_err "未找到 npm"; exit 1; }
   cd "${PA_REPO}/web"
-  # 把 config/web/.env* 链接到 web/ 里 vue cli 才认
-  for f in .env .env.development .env.production; do
-    [ -f "${PA_REPO}/config/web/${f}" ] && ln -sfn "../config/web/${f}" "./${f}"
-  done
+  # .env / .env.development / .env.production 已直接位于 web/ 根目录，无需软链
   msg_info "npm ci && npm run build"
   [ -d node_modules ] || npm ci
   npm run build

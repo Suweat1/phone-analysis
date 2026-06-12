@@ -5,13 +5,22 @@
 
 ## 1. 首次部署（仅做一次）
 
-将 jar、配置、DDL 上传到运行机：
+将 jar 上传到运行机：
 
 ```bash
 mkdir -p /opt/bigdata/data/jars
 cp ~/phone-analysis/spark-etl/target/phone-analysis-spark-etl.jar /opt/bigdata/data/jars/
-cp ~/phone-analysis/config/spark-etl/application.properties /opt/bigdata/data/jars/
 ```
+
+> `application.properties` 已被打进 jar 的 classpath（`spark-etl/src/main/resources/application.properties`），
+> 默认情况下 spark-submit 不需要 `--files` 分发。
+>
+> 若要按运行环境覆盖（如运行机端密码与默认不同），仍可：
+> ```bash
+> cp ~/phone-analysis/config/spark-etl/application.properties /opt/bigdata/data/jars/
+> spark-submit ... --files /opt/bigdata/data/jars/application.properties ...
+> ```
+> `PhoneConfig` 会优先读外部文件，回退到 classpath。
 
 把 parquet 推到 HDFS：
 
@@ -26,7 +35,6 @@ hdfs dfs -put -f ~/phone-analysis/data/processed/phone.parquet /phone-analysis/r
 spark-submit \
   --master yarn --deploy-mode client \
   --class com.phone.etl.batch.InitSchemaJob \
-  --files /opt/bigdata/data/jars/application.properties \
   /opt/bigdata/data/jars/phone-analysis-spark-etl.jar
 ```
 
@@ -43,7 +51,6 @@ mysql -uroot -p123456 phone_analysis \
 spark-submit \
   --master yarn --deploy-mode client \
   --class com.phone.etl.batch.PipelineJob \
-  --files /opt/bigdata/data/jars/application.properties \
   /opt/bigdata/data/jars/phone-analysis-spark-etl.jar
 ```
 
