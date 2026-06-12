@@ -76,28 +76,62 @@
             <artifactId>spring-kafka</artifactId>
         </dependency>
 
-        <!-- ============ Hive JDBC (standalone 避免与 SpringBoot 依赖冲突) ============ -->
+        <!-- ============ Hive JDBC ============
+             历史上这里用过 standalone classifier，期望「避免冲突」；
+             实际正相反 —— standalone 是 fat jar，里面塞了一份旧 Tomcat / Jetty / Jasper，
+             启动 Spring Boot embedded Tomcat 时报：
+                AbstractMethodError: TldScannerCallback.scan(Lorg/apache/tomcat/Jar;Ljava/lang/String;Z)V
+             改用普通 hive-jdbc + 精准 exclusions，让 Spring Boot 自己的 Tomcat 9.x 干净生效。
+             被排除的几类依赖：web 容器（jetty/tomcat/jsp）、日志桥（log4j/slf4j-log4j12）、
+             yarn rm（伪分布式不需要）、zookeeper-jute（与 hadoop-zk 冲突）。 -->
         <dependency>
             <groupId>org.apache.hive</groupId>
             <artifactId>hive-jdbc</artifactId>
             <version>${hive.version}</version>
-            <classifier>standalone</classifier>
             <exclusions>
+                <!-- 日志桥 -->
                 <exclusion>
                     <groupId>org.slf4j</groupId>
                     <artifactId>slf4j-log4j12</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.eclipse.jetty.aggregate</groupId>
-                    <artifactId>*</artifactId>
                 </exclusion>
                 <exclusion>
                     <groupId>org.apache.logging.log4j</groupId>
                     <artifactId>*</artifactId>
                 </exclusion>
                 <exclusion>
+                    <groupId>log4j</groupId>
+                    <artifactId>log4j</artifactId>
+                </exclusion>
+                <!-- web 容器：Spring Boot 自带 Tomcat 9.0.x，不能再让 hive 拖进来 -->
+                <exclusion>
+                    <groupId>org.eclipse.jetty</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.eclipse.jetty.aggregate</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.tomcat</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.tomcat.embed</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+                <!-- Hadoop YARN RM：伪分布式 / local 模式不需要 -->
+                <exclusion>
                     <groupId>org.apache.hadoop</groupId>
                     <artifactId>hadoop-yarn-server-resourcemanager</artifactId>
+                </exclusion>
+                <!-- servlet API：用 SpringBoot starter-web 提供的版本 -->
+                <exclusion>
+                    <groupId>javax.servlet</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>javax.servlet.jsp</groupId>
+                    <artifactId>*</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>

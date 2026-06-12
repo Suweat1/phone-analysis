@@ -85,20 +85,45 @@ Hadoop / Hive / Spark 均自带各自版本的 `slf4j` 和 `log4j`，**不要** 
 
 ## 7. Spring Boot ↔ Hive JDBC
 
-Spring Boot 应用通过 `hive-jdbc-3.1.3` 连 HiveServer2 时，会拉入 `org.apache.hive:hive-service-rpc` 等一连串依赖，常与 Spring Boot 的 `logback` / `jackson` 冲突。建议 Maven 依赖里 **只引** 一个独立的 `hive-jdbc-standalone` jar：
+> ⚠️ 历史误区：早期建议「用 `hive-jdbc:standalone` classifier 避免冲突」。**这是错的**——standalone 是 fat jar，里面 shade 了一份旧 Tomcat / Jetty / Jasper，反而与 Spring Boot 2.7 自带 Tomcat 9.0.x 撞车。典型报错：
+>
+> ```
+> AbstractMethodError: org.apache.jasper.servlet.TldScanner$TldScannerCallback
+>   .scan(Lorg/apache/tomcat/Jar;Ljava/lang/String;Z)V
+> ```
+>
+> 原因是 standalone 里那份旧 jasper 实现的 `JarScannerCallback#scan` 是旧签名，新版 Tomcat 的抽象方法找不到 override。
+
+**正确做法**：用普通 `hive-jdbc`，精准排除 web 容器 / 日志桥 / yarn-rm / servlet 几类依赖：
 
 ```xml
 <dependency>
   <groupId>org.apache.hive</groupId>
   <artifactId>hive-jdbc</artifactId>
   <version>3.1.3</version>
-  <classifier>standalone</classifier>
   <exclusions>
+    <!-- 日志桥：Spring Boot 用 logback，hive 拉来的 log4j 全踢 -->
     <exclusion><groupId>org.slf4j</groupId><artifactId>slf4j-log4j12</artifactId></exclusion>
+    <exclusion><groupId>org.apache.logging.log4j</groupId><artifactId>*</artifactId></exclusion>
+    <exclusion><groupId>log4j</groupId><artifactId>log4j</artifactId></exclusion>
+    <!-- web 容器：spring-boot-starter-web 已经提供 Tomcat 9.0.x -->
+    <exclusion><groupId>org.eclipse.jetty</groupId><artifactId>*</artifactId></exclusion>
     <exclusion><groupId>org.eclipse.jetty.aggregate</groupId><artifactId>*</artifactId></exclusion>
+    <exclusion><groupId>org.apache.tomcat</groupId><artifactId>*</artifactId></exclusion>
+    <exclusion><groupId>org.apache.tomcat.embed</groupId><artifactId>*</artifactId></exclusion>
+    <!-- 伪分布式不需要 yarn rm -->
+    <exclusion>
+      <groupId>org.apache.hadoop</groupId>
+      <artifactId>hadoop-yarn-server-resourcemanager</artifactId>
+    </exclusion>
+    <!-- servlet API 用 starter-web 的 -->
+    <exclusion><groupId>javax.servlet</groupId><artifactId>*</artifactId></exclusion>
+    <exclusion><groupId>javax.servlet.jsp</groupId><artifactId>*</artifactId></exclusion>
   </exclusions>
 </dependency>
 ```
+
+`app/pom.xml` 已按此配置，改动时不要再回退到 `<classifier>standalone</classifier>`。
 
 ## 8. 常见报错速查
 
@@ -114,6 +139,7 @@ Spring Boot 应用通过 `hive-jdbc-3.1.3` 连 HiveServer2 时，会拉入 `org.
 | `org.apache.hadoop.hive.metastore.api.MetaException: Version information not found` | Hive schema 未初始化 | `schematool -dbType mysql -initSchema` |
 | `Connection refused: phone-analysis/127.0.1.1:9092` | Kafka `advertised.listeners` 写成 localhost | 改为 `phone-analysis` |
 | `Permission denied: user=dr.who` | HDFS 用错用户 | core-site.xml 已配 proxyuser，否则用 `hdfs dfs -chmod 777` 临时放行 |
+| `AbstractMethodError: TldScannerCallback.scan(Lorg/apache/tomcat/Jar;...)V` | `hive-jdbc` 用了 `standalone` classifier，shade 进旧 Tomcat 与 Spring Boot 自带 Tomcat 9.x 接口不兼容 | §7 改普通 `hive-jdbc` + 精准 exclusions |
 
 ## 9. 整理 jar 改动的纪律
 
