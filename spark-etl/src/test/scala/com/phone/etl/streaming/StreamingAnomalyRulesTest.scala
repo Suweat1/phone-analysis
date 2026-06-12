@@ -14,18 +14,23 @@ import org.scalatest.funsuite.AnyFunSuite
  */
 class StreamingAnomalyRulesTest extends AnyFunSuite with BeforeAndAfterAll {
 
-  @transient private var spark: SparkSession = _
+  // 必须是 stable identifier（val）才能 `import spark.implicits._`
+  // 用 lazy val 避免在类构造期就吃 SparkSession 的几秒开销
+  private lazy val spark: SparkSession = SparkSession.builder()
+    .master("local[2]")
+    .appName("rules-test")
+    .config("spark.sql.shuffle.partitions", "2")
+    .getOrCreate()
+
+  import spark.implicits._
 
   override def beforeAll(): Unit = {
-    spark = SparkSession.builder()
-      .master("local[2]")
-      .appName("rules-test")
-      .config("spark.sql.shuffle.partitions", "2")
-      .getOrCreate()
     spark.sparkContext.setLogLevel("WARN")
   }
 
-  override def afterAll(): Unit = if (spark != null) spark.stop()
+  override def afterAll(): Unit = {
+    spark.stop()
+  }
 
   /** 与 RawStreamingJob.parse 输出 schema 一致（snake_case） */
   case class Evt(
@@ -36,20 +41,15 @@ class StreamingAnomalyRulesTest extends AnyFunSuite with BeforeAndAfterAll {
   )
 
   test("big_loss 优先级最高 + level=high") {
-    import spark.implicits._
     val df = Seq(Evt("e1", "Apple", "iP15", "电商", 4000, 5,
-      production_cost = 18000, marketing_cost_total = 3000)).toDF()
-    // revenue=20000, cost=21000, profit=-1000... 刚好阈值（-1000 严格小于），改成深亏
-    val df2 = Seq(Evt("e1", "Apple", "iP15", "电商", 4000, 5,
       production_cost = 20000, marketing_cost_total = 3000)).toDF()
-    val rs = StreamingAnomalyRules.tag(df2).collect().head
+    val rs = StreamingAnomalyRules.tag(df).collect().head
     assert(rs.getAs[String]("alert_type")  === "big_loss")
     assert(rs.getAs[String]("alert_level") === "high")
     assert(rs.getAs[String]("alert_title").contains("亏损"))
   }
 
   test("marketing_burnout：营销费率 >40%") {
-    import spark.implicits._
     val df = Seq(Evt("e1", "小米", "14U", "直播", 3000, 2,
       production_cost = 3000, marketing_cost_total = 3000)).toDF()
     // revenue=6000, marketing/revenue=0.5 → burnout
@@ -58,7 +58,6 @@ class StreamingAnomalyRulesTest extends AnyFunSuite with BeforeAndAfterAll {
   }
 
   test("profit_anomaly：毛利率 <5%") {
-    import spark.implicits._
     val df = Seq(Evt("e1", "vivo", "X100", "线下", 4000, 3,
       production_cost = 11800, marketing_cost_total = 100)).toDF()
     // revenue=12000, profit=100, margin=0.0083 → anomaly
@@ -68,7 +67,6 @@ class StreamingAnomalyRulesTest extends AnyFunSuite with BeforeAndAfterAll {
   }
 
   test("price_outlier：单价 >12000") {
-    import spark.implicits._
     val df = Seq(Evt("e1", "Apple", "iP15PM", "电商", 15000, 1,
       production_cost = 5000, marketing_cost_total = 500)).toDF()
     val rs = StreamingAnomalyRules.tag(df).collect().head
@@ -76,17 +74,15 @@ class StreamingAnomalyRulesTest extends AnyFunSuite with BeforeAndAfterAll {
     assert(rs.getAs[String]("alert_level") === "low")
   }
 
-  test("qty_spike：销量 >= 50") {
-    import spark.implicits._
+  test("qty_spike：销量 >= 50（但会被更高优先级规则拦截）") {
     val df = Seq(Evt("e1", "华为", "P70", "线下", 5000, 80,
       production_cost = 200000, marketing_cost_total = 50000)).toDF()
-    // 这条同时会满足 marketing_burnout，应被高优先级拦截
+    // 这条同时会满足 marketing_burnout / big_loss，应被高优先级拦截
     val rs = StreamingAnomalyRules.tag(df).collect().head
     assert(Set("marketing_burnout", "big_loss").contains(rs.getAs[String]("alert_type")))
   }
 
   test("正常事件：alert_type 为 null") {
-    import spark.implicits._
     val df = Seq(Evt("e1", "OPPO", "Find X7", "电商", 4500, 3,
       production_cost = 8000, marketing_cost_total = 1500)).toDF()
     // revenue=13500, profit=4000, margin=0.30, marketing/rev=0.11 → 全部合规
@@ -95,7 +91,6 @@ class StreamingAnomalyRulesTest extends AnyFunSuite with BeforeAndAfterAll {
   }
 
   test("派生字段：revenue / gross_profit / gross_margin / marketing_ratio 正确") {
-    import spark.implicits._
     val df = Seq(Evt("e1", "X", "Y", "Z", 1000, 10,
       production_cost = 5000, marketing_cost_total = 1000)).toDF()
     val rs = StreamingAnomalyRules.tag(df).collect().head

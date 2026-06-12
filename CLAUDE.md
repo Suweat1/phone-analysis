@@ -126,6 +126,7 @@ phone-analysis/
     - `String.linesIterator` → `.split("\n")` 或 `Source.fromString(s).getLines()`
     - `Stream.toIntOption / toDoubleOption` → `Try(s.toInt).toOption`
     - **SLF4J 调 `log.info(fmt, args*)` 最多 2 个变参**（重载受限）；超过用字符串插值 `log.info(s"... ${a} ${b} ${c}")`。混用 `:Any` 强转也容易让重载分发出错，统一插值风格更稳。
+    - **`import spark.implicits._` 要求 `spark` 是 stable identifier**（`val` / `lazy val`），不能用 `var spark: SparkSession = _`。ScalaTest 里推荐 `private lazy val spark = SparkSession.builder()...getOrCreate()`，在类层级写 import 而非每个 test 内重复 import。
 
 ## 数仓分层规范（Hive）
 
