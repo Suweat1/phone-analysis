@@ -18,6 +18,7 @@
 | `run-pipeline.sh` | hdfs put parquet → Spark ETL → 通知 SpringBoot 刷字典 | 运行机 |
 | `start-streaming.sh` | 启动 RawStreamingJob（长进程，Kafka phone_raw → 告警双写） | 运行机 |
 | `stop-streaming.sh` | 优雅停 RawStreamingJob | 运行机 |
+| `reset-hive-metastore.sh` | 重建 MySQL 上的 `hive_metastore` 库（KEY_CONSTRAINTS_FK4 死锁急救） | 运行机 |
 
 ## 首次部署流程（运行机）
 
@@ -86,3 +87,4 @@ ${PA_REPO}=~/phone-analysis     ${PA_BASE}=/opt/bigdata
 | `run-pipeline.sh --init` 报 metastore connect refused | `metastore` 没起 / 没就绪 | `bash scripts/start-all.sh --only metastore` 然后等 30s |
 | `/api/health` 返回 502/404 | app jar 没构建 / Spring profile 错 | `tail /opt/bigdata/log/app/app.out` |
 | 改了密码业务代码不生效 | 仅改了 `lib/env.sh` 不够 | 同步改 `config/app/application.yml` / `config/spark-etl/application.properties` / `config/redis/redis.conf` |
+| metastore 启动卡死 / Beeline `recv_drop_table_with_environment_context` 长时间无响应 | KEY_CONSTRAINTS 无索引 + 启动期 ALTER ADD CONSTRAINT FK4 与 hive 连接抢锁（HIVE-21563） | `bash scripts/reset-hive-metastore.sh --yes`，详见 [docs/deploy/05-hive.md §6.1](../docs/deploy/05-hive.md#61-必做-给-key_constraints-加索引hive-21563) |

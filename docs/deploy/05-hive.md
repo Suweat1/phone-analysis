@@ -137,6 +137,57 @@ schematool -dbType mysql -initSchema
 
 成功后 MySQL 的 `hive_metastore` 库中会出现 70+ 张表。
 
+### 6.1 [必做] 给 KEY_CONSTRAINTS 加索引（HIVE-21563）
+
+Hive 3.1.3 schema 在 `KEY_CONSTRAINTS` 表的 `PARENT_TBL_ID / CHILD_TBL_ID` 上**没建索引**。每次 `DROP TABLE` 都会全表扫这张表找外键约束。低内存机器（如本项目 8GB VM）上能让一个简单 DROP 卡 5+ 分钟，从外面看就像 metastore 死了。
+
+更隐蔽的是：Hive 3.1.3 的 metastore **每次启动都会自动尝试**
+`ALTER TABLE KEY_CONSTRAINTS ADD CONSTRAINT KEY_CONSTRAINTS_FK4`（schematool 没建），
+这条 ALTER 在「KEY_CONSTRAINTS 无索引 + 还有 hive 用户连接占着锁」时会直接卡死。
+此时单纯重启 metastore 也救不回来——必须先停 metastore、清掉 MySQL 中所有 hive 连接、再加索引。
+
+#### 首次部署（schematool 之后立刻补）
+
+```bash
+mysql -uroot -p123456 hive_metastore <<'SQL'
+ALTER TABLE KEY_CONSTRAINTS ADD INDEX CONSTRAINTS_PARENT_TBL_ID_INDEX (PARENT_TBL_ID);
+ALTER TABLE KEY_CONSTRAINTS ADD INDEX CONSTRAINTS_CHILD_TBL_ID_INDEX  (CHILD_TBL_ID);
+SQL
+```
+
+#### 已经卡死、需要重建 metastore 库（推荐用脚本）
+
+```bash
+bash scripts/reset-hive-metastore.sh --yes
+```
+
+脚本顺序（与本节正文同源）：
+1. 停 hiveserver2 + metastore（含 `pkill -9 -f Dproc_metastore` 兜底）
+2. KILL `information_schema.processlist` 中所有 `user='hive'` 的残留连接
+3. `DROP DATABASE hive_metastore` → 重建 → 重新 `GRANT` hive 账号
+4. `schematool -dbType mysql -initSchema`
+5. **★ 此时 metastore 还没起，无 hive 连接抢锁** —— 加 KEY_CONSTRAINTS 两个索引（秒过）
+6. 起 metastore + HS2
+
+> 重建后 Hive 库表元数据全空，需重新跑 `bash scripts/run-pipeline.sh --init`。HDFS 上的实际数据文件（`/phone-analysis/raw` 等）不会被动。
+
+#### 症状识别
+
+- `jstack <metastore-pid>` 出现 `ObjectStore.dropConstraint` → `listAllTableConstraintsWithOptionalConstraintName` → MySQL `ReadAheadInputStream.fill` 上几分钟。
+- Spark / Beeline 端：`recv_drop_table_with_environment_context` 卡 thrift read。
+- MySQL 端：`SHOW PROCESSLIST` 看到一条 `ALTER TABLE KEY_CONSTRAINTS ADD CONSTRAINT ...` 长时间 `Waiting for table metadata lock`。
+
+#### 极端情况：脚本 KILL 完仍然卡
+
+说明 InnoDB 内部还残留行锁（不是 metadata lock），唯一干净的解法是重启 MySQL：
+
+```bash
+bash scripts/stop-all.sh --only hiveserver2,metastore,mysql
+bash scripts/start-all.sh --only mysql
+bash scripts/reset-hive-metastore.sh --yes
+```
+
+
 ## 7. 启停（无 systemd）
 
 ```bash

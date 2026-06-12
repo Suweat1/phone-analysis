@@ -106,6 +106,7 @@ Spring Boot 应用通过 `hive-jdbc-3.1.3` 连 HiveServer2 时，会拉入 `org.
 |---|---|---|
 | `Builtin jars can only be used when hive execution version == hive metastore version. Execution: 2.3.9 != Metastore: 3.1.3` | 显式写了 `metastore.version=3.1.3` 又用 `jars=builtin`（builtin 只能配 2.3.9） | §3 把 version 改回 2.3.9，jars 保持 builtin（thrift 协议兼容） |
 | Spark 启动后 metastore 调用永远卡 10 分钟超时 / `Read timed out` | `metastore.jars=path` 把 200+ Hive 3.1.3 jar 加载隔离 classloader，对 8GB VM 太重 | §3 同上：换回 2.3.9 builtin |
+| `DROP TABLE IF EXISTS` 在 Spark / beeline 卡几分钟，metastore JStack 显示 `ObjectStore.dropConstraint` 在 MySQL 上 read 卡死 | Hive 3.1.3 [HIVE-21563](https://issues.apache.org/jira/browse/HIVE-21563)：`KEY_CONSTRAINTS` 表 `PARENT_TBL_ID/CHILD_TBL_ID` 没索引，DROP 会全表扫 | 在 hive_metastore 库执行：`ALTER TABLE KEY_CONSTRAINTS ADD INDEX CONSTRAINTS_PARENT_TBL_ID_INDEX (PARENT_TBL_ID), ADD INDEX CONSTRAINTS_CHILD_TBL_ID_INDEX (CHILD_TBL_ID);`（详见 [05-hive.md §6.1](./05-hive.md)） |
 | `NoSuchMethodError: com.google.common.base.Preconditions` | Hive guava 19 vs Hadoop guava 27 | 替换 §1 |
 | `unsupported major.minor version 55.0` | 误用了 JDK 11 | 检查 `java -version` |
 | `Public Key Retrieval is not allowed` | MySQL 8 + `useSSL=false` 缺参数 | URL 加 `allowPublicKeyRetrieval=true` |
