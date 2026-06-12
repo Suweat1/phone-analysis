@@ -63,5 +63,6 @@ TBLPROPERTIES (
     'parquet.compression' = 'SNAPPY'
 );
 
--- 修复元数据（external 表 + 已有数据时立即可查）
-MSCK REPAIR TABLE ods_phone_sales;
+-- 注：本表非分区表 + EXTERNAL，CREATE TABLE 完成后立即可查 LOCATION 下的 parquet。
+-- 历史上这里有过一行 MSCK REPAIR TABLE，那是给分区表加载分区元数据的，对非分区表
+-- 既无必要、Spark 3 也会直接报 "MSCK REPAIR TABLE only works on partitioned tables"。
