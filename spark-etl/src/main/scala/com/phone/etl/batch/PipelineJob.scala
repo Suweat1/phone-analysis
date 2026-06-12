@@ -1,14 +1,13 @@
 package com.phone.etl.batch
 
 import com.phone.etl.common.JobRunner
-import com.phone.etl.config.PhoneConfig
 import org.apache.spark.sql.SparkSession
 
 /**
  * 串行执行整条批处理链路（适合每日离线刷新使用）。
  *
  * 流程：
- *   RawToOds (MSCK)
+ *   RawToOds (REFRESH 外部表，非分区无需 MSCK)
  *     → OdsToDwd
  *       → DwdToDws
  *         → DwsToAds
@@ -26,11 +25,7 @@ object PipelineJob {
   def main(args: Array[String]): Unit = JobRunner.run("pipeline") { spark =>
     JobRunner.printContext()
 
-    step(spark, "raw-to-ods") {
-      JobRunner.useDb(spark, PhoneConfig.Hive.odsDb)
-      spark.sql("MSCK REPAIR TABLE ods_phone_sales")
-    }
-
+    step(spark, "raw-to-ods")   { runMain(RawToOdsJob.main _,   spark) }
     step(spark, "ods-to-dwd")   { runMain(OdsToDwdJob.main _,   spark) }
     step(spark, "dwd-to-dws")   { runMain(DwdToDwsJob.main _,   spark) }
     step(spark, "dws-to-ads")   { runMain(DwsToAdsJob.main _,   spark) }
