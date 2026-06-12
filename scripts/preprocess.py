@@ -122,6 +122,17 @@ def main() -> None:
 
     # 2) 单位字段拆分（必须在重命名前做，rules 用中文键）
     df = split_spec_units(df)
+    # split_spec_units 用 .apply 写入，pyarrow 会把混合 int/None 的 object 列
+    # 推断为 INT64；Hive DDL 声明的是 INT（INT32），Spark 3 严格不允许
+    # INT64→INT32 narrow，启动期会抛 SchemaColumnConvertNotSupportedException。
+    # 这里统一用 pandas nullable Int32（保留 NaN 语义，pyarrow 落盘为 INT32）。
+    spec_int_cols = [
+        "camera_pixel_wan", "battery_capacity_mah",
+        "storage_gb", "refresh_rate_hz",
+    ]
+    for c in spec_int_cols:
+        if c in df.columns:
+            df[c] = pd.to_numeric(df[c], errors="coerce").round().astype("Int32")
 
     # 3) 其余中文列名 → 英文
     rename_map = {cn: en for cn, en in COLUMN_CN_TO_EN.items() if cn in df.columns}
@@ -131,15 +142,18 @@ def main() -> None:
     #    日期
     if "sale_date" in df.columns:
         df["sale_date"] = pd.to_datetime(df["sale_date"], errors="coerce").dt.date
-    #    数值列：销售/成本/配件/延保 一律 float64；用户评价/销量/客单价/用户年龄 → Int64
+    #    数值列：销售/成本/配件/延保 一律 float64；
+    #    用户评价/销量/客单价/用户年龄/总延保服务额 → Int32
+    #    （历史上写过 Int64，但 Hive DDL 全部声明 INT；Int32 与 INT 一一对应，
+    #     避免 Spark 3 启动期 INT64→INT 的转换报错。值域均 << 2^31，无溢出风险。）
     int_cols = [
         "user_rating", "unit_price", "sales_qty",
         "warranty_total_sales", "user_age",
     ]
     for c in int_cols:
         if c in df.columns:
-            # 先转 float，再 round，最后 Int64（容忍源数据里偶发的 .0 / NaN）
-            df[c] = pd.to_numeric(df[c], errors="coerce").round().astype("Int64")
+            # 先转 float，再 round，最后 Int32（容忍源数据里偶发的 .0 / NaN）
+            df[c] = pd.to_numeric(df[c], errors="coerce").round().astype("Int32")
 
     float_cols = [
         "production_cost", "marketing_cost_total", "logistics_cost",
