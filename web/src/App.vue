@@ -60,7 +60,14 @@
           </el-menu>
         </el-aside>
         <el-main class="app-main">
-          <router-view />
+          <!-- :key="$route.path" 强制路由切换时销毁旧组件、重建新组件。
+               原因：本项目所有 dashboard view 结构相似（同一深度、同一组件链），
+               Vue Router 默认会复用 <router-view> 子组件实例，导致：
+                 - 切到新菜单时 mounted 不重跑 → 不发新 API → 看到的还是旧页
+                 - 旧组件持有的 ECharts 实例与新 option diff 失败，
+                   控制台报 "Cannot read properties of undefined (reading 'key')"
+               加 :key 后每条路由独立挂载/销毁，dispose ECharts 也走到正确分支。-->
+          <router-view :key="$route.path" />
         </el-main>
         <el-aside width="320px" class="app-alert-aside">
           <AlertPanel />
