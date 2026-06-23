@@ -7,13 +7,26 @@
 server:
   port: 8080
   servlet:
-    context-path: /api
+    # context-path 保持根 "/"：
+    #   - REST/SSE 由 WebConfig#configurePathMatch 注入 /api 前缀
+    #   - Vue 编译产物挂在根路径下（dist → app/src/main/resources/static/）
+    jsp:
+      registered: false
 
 spring:
   application:
     name: phone-analysis-app
   profiles:
     active: prod
+
+  # ============ 静态资源（Vue 看板 dist 打进 classpath:/static/） ============
+  web:
+    resources:
+      static-locations: classpath:/static/
+      cache:
+        cachecontrol:
+          max-age: 3600
+          cache-public: true
 
   # ============ Jackson ============
   jackson:

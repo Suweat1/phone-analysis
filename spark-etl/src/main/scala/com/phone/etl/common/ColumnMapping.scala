@@ -91,7 +91,29 @@ object ColumnMapping {
     "metric_code"           -> "指标代号",
     "metric_value"          -> "指标值",
     "mom_ratio"             -> "环比",
-    "yoy_ratio"             -> "同比"
+    "yoy_ratio"             -> "同比",
+    // ===== 扩展看板派生（ads_ext_*） =====
+    "revenue_share"         -> "营收占比",
+    "profit_share"          -> "毛利占比",
+    "r_revenue"             -> "雷达·营收(归一)",
+    "r_margin"              -> "雷达·毛利率(归一)",
+    "r_qty"                 -> "雷达·销量(归一)",
+    "r_rating"              -> "雷达·评价(归一)",
+    "r_low_marketing"       -> "雷达·低营销费率(归一)",
+    "kpi_code"              -> "KPI 代号",
+    "kpi_name_cn"           -> "KPI 名称",
+    "kpi_value"             -> "KPI 当前值",
+    "target_value"          -> "目标值",
+    "warn_value"            -> "告警阈值",
+    "raw_value"             -> "原始数值",
+    "raw_unit"              -> "数值单位",
+    "layer_idx"             -> "桑基层级",
+    "q_min"                 -> "最小值",
+    "q1"                    -> "下四分位",
+    "q_median"              -> "中位数",
+    "q3"                    -> "上四分位",
+    "q_max"                 -> "最大值",
+    "outliers"              -> "离群点"
   )
 
   /** 完整 英文 → 中文（供前端反查） */
@@ -115,7 +137,13 @@ object ColumnMapping {
       "qty_growth_ratio", "opportunity_score", "potential_score",
       "contribution_ratio", "rolling_margin_30d", "deviation_ratio",
       "is_anomaly", "anomaly_level", "metric_code", "metric_value",
-      "mom_ratio", "yoy_ratio"
+      "mom_ratio", "yoy_ratio",
+      // ads_ext_* 派生
+      "revenue_share", "profit_share",
+      "r_revenue", "r_margin", "r_qty", "r_rating", "r_low_marketing",
+      "kpi_code", "kpi_name_cn", "kpi_value", "target_value",
+      "warn_value", "raw_value", "raw_unit",
+      "layer_idx", "q_min", "q1", "q_median", "q3", "q_max", "outliers"
     )
     enToCn.keys.map { en =>
       val layer =

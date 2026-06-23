@@ -21,6 +21,15 @@ export const api = {
   segmentTopMargins:  ()              => http.get('/dashboard/segment/top-margin'),
   growthPotentials:   ()              => http.get('/dashboard/growth-potential'),
 
+  // 扩展看板（多类型 ECharts）
+  extBrandSummary:    ()              => http.get('/dashboard/ext/brand-summary'),
+  extKpiGauge:        ()              => http.get('/dashboard/ext/kpi-gauge'),
+  extBrandModelTree:  ()              => http.get('/dashboard/ext/brand-model-tree'),
+  extCalendarHeat:    ()              => http.get('/dashboard/ext/calendar-heat'),
+  extBrandMonthHeat:  ()              => http.get('/dashboard/ext/brand-month-heat'),
+  extSalesSankey:     ()              => http.get('/dashboard/ext/sales-sankey'),
+  extBrandPriceBox:   ()              => http.get('/dashboard/ext/brand-price-box'),
+
   // 告警（历史）
   alertRecent: () => http.get('/alert/recent')
 }

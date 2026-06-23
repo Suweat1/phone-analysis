@@ -178,3 +178,142 @@ CREATE TABLE ads_growth_potential (
 COMMENT 'ADS 增长潜力点 TopN'
 STORED AS PARQUET
 TBLPROPERTIES ('parquet.compression' = 'SNAPPY');
+
+-- ============================================================
+-- 9~13) 5 张「扩展看板表」—— 用于多类型 ECharts 可视化
+-- 命名规则：ads_ext_*，便于与原 8 张「业务问题」表区分。
+-- ============================================================
+
+-- ------------------------------------------------------------
+-- 9) 品牌大盘汇总（饼 / 雷达 / 漏斗 用）
+--    每个品牌一行，包含主要 KPI；雷达指标已预归一化到 0~1
+-- ------------------------------------------------------------
+DROP TABLE IF EXISTS ads_ext_brand_summary;
+
+CREATE TABLE ads_ext_brand_summary (
+    brand               STRING,
+    total_revenue       DOUBLE,
+    total_qty           BIGINT,
+    total_gross_profit  DOUBLE,
+    gross_margin        DOUBLE,
+    marketing_ratio     DOUBLE,
+    avg_unit_price      DOUBLE,
+    avg_user_rating     DOUBLE,
+    order_cnt           BIGINT,
+    model_cnt           BIGINT,
+    revenue_share       DOUBLE        COMMENT '营收占整体比例（饼图用）',
+    profit_share        DOUBLE        COMMENT '毛利占整体比例',
+    -- 雷达图 5 维（0~1 归一化）
+    r_revenue           DOUBLE        COMMENT '雷达：营收',
+    r_margin            DOUBLE        COMMENT '雷达：毛利率',
+    r_qty               DOUBLE        COMMENT '雷达：销量',
+    r_rating            DOUBLE        COMMENT '雷达：用户评价',
+    r_low_marketing     DOUBLE        COMMENT '雷达：低营销费率（1-norm）'
+)
+COMMENT 'ADS 品牌大盘汇总（饼/雷达/漏斗 用）'
+STORED AS PARQUET
+TBLPROPERTIES ('parquet.compression' = 'SNAPPY');
+
+-- ------------------------------------------------------------
+-- 10) 全局 KPI 仪表盘（单行宽表，含整体指标 + 阈值）
+-- ------------------------------------------------------------
+DROP TABLE IF EXISTS ads_ext_kpi_gauge;
+
+CREATE TABLE ads_ext_kpi_gauge (
+    kpi_code            STRING        COMMENT 'gross_margin / marketing_ratio / accessory_attach / warranty_attach',
+    kpi_name_cn         STRING,
+    kpi_value           DOUBLE        COMMENT '0~1（比率类）或 0~1 归一化后的得分',
+    target_value        DOUBLE        COMMENT '目标值（用于仪表盘绿色刻度）',
+    warn_value          DOUBLE        COMMENT '告警阈值（红色刻度）',
+    raw_value           DOUBLE        COMMENT '原始数值（金额/比率）',
+    raw_unit            STRING        COMMENT '元 / %'
+)
+COMMENT 'ADS 全局 KPI 仪表盘（gauge）'
+STORED AS PARQUET
+TBLPROPERTIES ('parquet.compression' = 'SNAPPY');
+
+-- ------------------------------------------------------------
+-- 11) 品牌 × 机型 层级（Treemap / Sunburst 用）
+--    一行一个机型，前端按 brand → model 自行嵌套
+-- ------------------------------------------------------------
+DROP TABLE IF EXISTS ads_ext_brand_model_tree;
+
+CREATE TABLE ads_ext_brand_model_tree (
+    brand               STRING,
+    model               STRING,
+    total_revenue       DOUBLE,
+    total_gross_profit  DOUBLE,
+    gross_margin        DOUBLE,
+    total_qty           BIGINT
+)
+COMMENT 'ADS 品牌→机型层级聚合（Treemap/Sunburst）'
+STORED AS PARQUET
+TBLPROPERTIES ('parquet.compression' = 'SNAPPY');
+
+-- ------------------------------------------------------------
+-- 12) 日历热力（按日营收）
+--    与 ads_metric_trend(metric_code='revenue') 数据等价，
+--    但只取 (date, value)，前端日历热力图 calendar+heatmap 直读
+-- ------------------------------------------------------------
+DROP TABLE IF EXISTS ads_ext_calendar_heat;
+
+CREATE TABLE ads_ext_calendar_heat (
+    sale_date           DATE,
+    total_revenue       DOUBLE,
+    total_qty           BIGINT,
+    gross_margin        DOUBLE
+)
+COMMENT 'ADS 日营收日历热力（calendar+heatmap 用）'
+STORED AS PARQUET
+TBLPROPERTIES ('parquet.compression' = 'SNAPPY');
+
+-- ------------------------------------------------------------
+-- 13) 品牌 × 月份 毛利率（矩形热力图 / 河流图共用）
+-- ------------------------------------------------------------
+DROP TABLE IF EXISTS ads_ext_brand_month_heat;
+
+CREATE TABLE ads_ext_brand_month_heat (
+    brand               STRING,
+    sale_ym             STRING        COMMENT 'yyyy-MM',
+    total_revenue       DOUBLE,
+    total_gross_profit  DOUBLE,
+    gross_margin        DOUBLE
+)
+COMMENT 'ADS 品牌×月份矩形热力（heatmap）'
+STORED AS PARQUET
+TBLPROPERTIES ('parquet.compression' = 'SNAPPY');
+
+-- ------------------------------------------------------------
+-- 14) 桑基图（渠道 → 品牌 → 年龄段，按毛利流量）
+--    存「边」：source/target/value，前端 sankey 直读
+-- ------------------------------------------------------------
+DROP TABLE IF EXISTS ads_ext_sales_sankey;
+
+CREATE TABLE ads_ext_sales_sankey (
+    layer_idx           INT           COMMENT '0=渠道→品牌, 1=品牌→年龄段',
+    source              STRING,
+    target              STRING,
+    `value`             DOUBLE        COMMENT '毛利金额'
+)
+COMMENT 'ADS 桑基图边表（渠道→品牌→年龄段）'
+STORED AS PARQUET
+TBLPROPERTIES ('parquet.compression' = 'SNAPPY');
+
+-- ------------------------------------------------------------
+-- 15) 品牌客单价分位（箱线图 boxplot 用）
+--    存 5 数概括 + 离群点（max 5 个），前端直接渲染
+-- ------------------------------------------------------------
+DROP TABLE IF EXISTS ads_ext_brand_price_box;
+
+CREATE TABLE ads_ext_brand_price_box (
+    brand               STRING,
+    q_min               DOUBLE,
+    q1                  DOUBLE,
+    q_median            DOUBLE,
+    q3                  DOUBLE,
+    q_max               DOUBLE,
+    outliers            STRING        COMMENT '前 5 个离群点，逗号分隔'
+)
+COMMENT 'ADS 品牌客单价分位（boxplot）'
+STORED AS PARQUET
+TBLPROPERTIES ('parquet.compression' = 'SNAPPY');

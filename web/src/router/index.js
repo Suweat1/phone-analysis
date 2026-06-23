@@ -15,6 +15,13 @@ export default new Router({
     { path: '/profit-decomp',    component: () => import('@/views/dashboard/ProfitDecomp.vue') },
     { path: '/high-value',       component: () => import('@/views/dashboard/HighValue.vue') },
     { path: '/segment',          component: () => import('@/views/dashboard/SegmentTopMargin.vue') },
-    { path: '/growth-potential', component: () => import('@/views/dashboard/GrowthPotential.vue') }
+    { path: '/growth-potential', component: () => import('@/views/dashboard/GrowthPotential.vue') },
+
+    // ---- 扩展看板（多类型 ECharts） ----
+    { path: '/brand-overview',     component: () => import('@/views/dashboard/BrandOverview.vue') },
+    { path: '/tree-sunburst',      component: () => import('@/views/dashboard/TreeSunburst.vue') },
+    { path: '/heatmap-analysis',   component: () => import('@/views/dashboard/HeatmapAnalysis.vue') },
+    { path: '/flow-sankey',        component: () => import('@/views/dashboard/FlowSankey.vue') },
+    { path: '/price-distribution', component: () => import('@/views/dashboard/PriceDistribution.vue') }
   ]
 })

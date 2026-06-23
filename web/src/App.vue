@@ -13,30 +13,50 @@
       <el-container>
         <el-aside width="200px" class="app-aside">
           <el-menu :default-active="$route.path" router>
-            <el-menu-item index="/overview">
-              <i class="el-icon-data-board"></i><span>总览</span>
-            </el-menu-item>
-            <el-menu-item index="/profit-anomaly">
-              <i class="el-icon-warning-outline"></i><span>利润异常</span>
-            </el-menu-item>
-            <el-menu-item index="/metric-trend">
-              <i class="el-icon-data-line"></i><span>经济指标波动</span>
-            </el-menu-item>
-            <el-menu-item index="/low-contrib">
-              <i class="el-icon-bottom"></i><span>低贡献机型/渠道</span>
-            </el-menu-item>
-            <el-menu-item index="/profit-decomp">
-              <i class="el-icon-pie-chart"></i><span>利润下滑归因</span>
-            </el-menu-item>
-            <el-menu-item index="/high-value">
-              <i class="el-icon-star-on"></i><span>高价值机会机型</span>
-            </el-menu-item>
-            <el-menu-item index="/segment">
-              <i class="el-icon-medal"></i><span>利润率优异细分</span>
-            </el-menu-item>
-            <el-menu-item index="/growth-potential">
-              <i class="el-icon-top"></i><span>增长潜力点</span>
-            </el-menu-item>
+            <el-menu-item-group title="业务问题">
+              <el-menu-item index="/overview">
+                <i class="el-icon-data-board"></i><span>总览</span>
+              </el-menu-item>
+              <el-menu-item index="/profit-anomaly">
+                <i class="el-icon-warning-outline"></i><span>利润异常</span>
+              </el-menu-item>
+              <el-menu-item index="/metric-trend">
+                <i class="el-icon-data-line"></i><span>经济指标波动</span>
+              </el-menu-item>
+              <el-menu-item index="/low-contrib">
+                <i class="el-icon-bottom"></i><span>低贡献机型/渠道</span>
+              </el-menu-item>
+              <el-menu-item index="/profit-decomp">
+                <i class="el-icon-pie-chart"></i><span>利润下滑归因</span>
+              </el-menu-item>
+              <el-menu-item index="/high-value">
+                <i class="el-icon-star-on"></i><span>高价值机会机型</span>
+              </el-menu-item>
+              <el-menu-item index="/segment">
+                <i class="el-icon-medal"></i><span>利润率优异细分</span>
+              </el-menu-item>
+              <el-menu-item index="/growth-potential">
+                <i class="el-icon-top"></i><span>增长潜力点</span>
+              </el-menu-item>
+            </el-menu-item-group>
+
+            <el-menu-item-group title="多维可视化">
+              <el-menu-item index="/brand-overview">
+                <i class="el-icon-receiving"></i><span>品牌大盘</span>
+              </el-menu-item>
+              <el-menu-item index="/tree-sunburst">
+                <i class="el-icon-share"></i><span>层级结构</span>
+              </el-menu-item>
+              <el-menu-item index="/heatmap-analysis">
+                <i class="el-icon-date"></i><span>热力分析</span>
+              </el-menu-item>
+              <el-menu-item index="/flow-sankey">
+                <i class="el-icon-sort"></i><span>资金流向</span>
+              </el-menu-item>
+              <el-menu-item index="/price-distribution">
+                <i class="el-icon-data-analysis"></i><span>价格分布</span>
+              </el-menu-item>
+            </el-menu-item-group>
           </el-menu>
         </el-aside>
         <el-main class="app-main">

@@ -143,8 +143,105 @@ CREATE TABLE ads_growth_potential (
     PRIMARY KEY (rank_no)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='增长潜力点 TopN';
 
+-- ============================================================
+-- 扩展看板表（ads_ext_*）—— 服务于 Vue 端多类型 ECharts
+-- 与 Hive 04-ads.sql 第 9~15 节字段保持一致
+-- ============================================================
+
+-- 9) 品牌大盘汇总
+DROP TABLE IF EXISTS ads_ext_brand_summary;
+CREATE TABLE ads_ext_brand_summary (
+    brand               VARCHAR(64)   NOT NULL,
+    total_revenue       DOUBLE,
+    total_qty           BIGINT,
+    total_gross_profit  DOUBLE,
+    gross_margin        DOUBLE,
+    marketing_ratio     DOUBLE,
+    avg_unit_price      DOUBLE,
+    avg_user_rating     DOUBLE,
+    order_cnt           BIGINT,
+    model_cnt           BIGINT,
+    revenue_share       DOUBLE,
+    profit_share        DOUBLE,
+    r_revenue           DOUBLE,
+    r_margin            DOUBLE,
+    r_qty               DOUBLE,
+    r_rating            DOUBLE,
+    r_low_marketing     DOUBLE,
+    PRIMARY KEY (brand)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='品牌大盘汇总（饼/雷达/漏斗）';
+
+-- 10) 全局 KPI 仪表盘
+DROP TABLE IF EXISTS ads_ext_kpi_gauge;
+CREATE TABLE ads_ext_kpi_gauge (
+    kpi_code            VARCHAR(32)   NOT NULL,
+    kpi_name_cn         VARCHAR(64),
+    kpi_value           DOUBLE,
+    target_value        DOUBLE,
+    warn_value          DOUBLE,
+    raw_value           DOUBLE,
+    raw_unit            VARCHAR(16),
+    PRIMARY KEY (kpi_code)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='全局 KPI 仪表盘（gauge）';
+
+-- 11) 品牌×机型 层级
+DROP TABLE IF EXISTS ads_ext_brand_model_tree;
+CREATE TABLE ads_ext_brand_model_tree (
+    brand               VARCHAR(64)   NOT NULL,
+    model               VARCHAR(128)  NOT NULL,
+    total_revenue       DOUBLE,
+    total_gross_profit  DOUBLE,
+    gross_margin        DOUBLE,
+    total_qty           BIGINT,
+    PRIMARY KEY (brand, model)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='品牌→机型层级（Treemap/Sunburst）';
+
+-- 12) 日历热力（按日营收）
+DROP TABLE IF EXISTS ads_ext_calendar_heat;
+CREATE TABLE ads_ext_calendar_heat (
+    sale_date           DATE          NOT NULL,
+    total_revenue       DOUBLE,
+    total_qty           BIGINT,
+    gross_margin        DOUBLE,
+    PRIMARY KEY (sale_date)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='日营收日历热力';
+
+-- 13) 品牌×月份 热力
+DROP TABLE IF EXISTS ads_ext_brand_month_heat;
+CREATE TABLE ads_ext_brand_month_heat (
+    brand               VARCHAR(64)   NOT NULL,
+    sale_ym             VARCHAR(7)    NOT NULL,
+    total_revenue       DOUBLE,
+    total_gross_profit  DOUBLE,
+    gross_margin        DOUBLE,
+    PRIMARY KEY (brand, sale_ym)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='品牌×月份矩形热力';
+
+-- 14) 桑基图边
+DROP TABLE IF EXISTS ads_ext_sales_sankey;
+CREATE TABLE ads_ext_sales_sankey (
+    layer_idx           INT           NOT NULL,
+    source              VARCHAR(64)   NOT NULL,
+    target              VARCHAR(64)   NOT NULL,
+    `value`             DOUBLE,
+    PRIMARY KEY (layer_idx, source, target)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='桑基图边（渠道→品牌→年龄段）';
+
+-- 15) 品牌客单价箱线
+DROP TABLE IF EXISTS ads_ext_brand_price_box;
+CREATE TABLE ads_ext_brand_price_box (
+    brand               VARCHAR(64)   NOT NULL,
+    q_min               DOUBLE,
+    q1                  DOUBLE,
+    q_median            DOUBLE,
+    q3                  DOUBLE,
+    q_max               DOUBLE,
+    outliers            VARCHAR(256),
+    PRIMARY KEY (brand)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='品牌客单价分位（boxplot）';
+
 -- ------------------------------------------------------------
--- 9) 字段中英映射字典（供前端反查 / API 文档展示）
+-- 16) 字段中英映射字典（供前端反查 / API 文档展示）
 --    数据由 spark-etl 启动时一次性写入，与 scripts/column_mapping.py 同源
 -- ------------------------------------------------------------
 DROP TABLE IF EXISTS ads_column_dict;

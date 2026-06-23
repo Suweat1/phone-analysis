@@ -35,7 +35,9 @@ curl http://phone-analysis:8080/api/health
 
 ## 3. REST API
 
-所有 URL 已带 `server.servlet.context-path=/api` 前缀。
+所有 REST/SSE URL 由 `WebConfig#configurePathMatch` 自动加上 `/api` 前缀
+（Controller 源码里写的是 `/dashboard/...`，生效路径是 `/api/dashboard/...`）。
+context-path 保持根 `/`，让 Vue 编译产物 (`app/src/main/resources/static/`) 占据根路径。
 
 ### 3.1 健康
 | Method | URL | 说明 |
@@ -63,6 +65,18 @@ curl http://phone-analysis:8080/api/health
 | GET | `/api/dashboard/high-value/model` | — | 高价值机型 TopN |
 | GET | `/api/dashboard/segment/top-margin` | — | 利润率优异细分市场 TopN |
 | GET | `/api/dashboard/growth-potential` | — | 增长潜力点 TopN |
+
+### 3.3.1 扩展看板（多类型 ECharts，对应 `ads_ext_*` 7 张表）
+| Method | URL | 说明 |
+|---|---|---|
+| GET | `/api/dashboard/ext/brand-summary` | 品牌大盘：饼图/环图/雷达/漏斗共用（含 5 维归一化雷达字段） |
+| GET | `/api/dashboard/ext/kpi-gauge` | 4 个全局 KPI 仪表盘（毛利率/营销费率/配件附加/延保附加） |
+| GET | `/api/dashboard/ext/brand-model-tree` | 品牌→机型 层级（Treemap / Sunburst） |
+| GET | `/api/dashboard/ext/calendar-heat` | 日营收日历热力（calendar+heatmap） |
+| GET | `/api/dashboard/ext/brand-month-heat` | 品牌×月份毛利率矩形热力 |
+| GET | `/api/dashboard/ext/sales-sankey` | 桑基图边：渠道→品牌→年龄段 |
+| GET | `/api/dashboard/ext/brand-price-box` | 各品牌客单价箱线 5 数概括 + 离群点 |
+
 
 ### 3.4 实时告警
 | Method | URL | 说明 |

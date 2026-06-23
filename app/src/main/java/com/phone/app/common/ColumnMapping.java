@@ -106,6 +106,28 @@ public final class ColumnMapping {
         en.put("metric_value", "指标值");
         en.put("mom_ratio", "环比");
         en.put("yoy_ratio", "同比");
+        // ===== 扩展看板派生（ads_ext_*） =====
+        en.put("revenue_share",   "营收占比");
+        en.put("profit_share",    "毛利占比");
+        en.put("r_revenue",       "雷达·营收(归一)");
+        en.put("r_margin",        "雷达·毛利率(归一)");
+        en.put("r_qty",           "雷达·销量(归一)");
+        en.put("r_rating",        "雷达·评价(归一)");
+        en.put("r_low_marketing", "雷达·低营销费率(归一)");
+        en.put("kpi_code",        "KPI 代号");
+        en.put("kpi_name_cn",     "KPI 名称");
+        en.put("kpi_value",       "KPI 当前值");
+        en.put("target_value",    "目标值");
+        en.put("warn_value",      "告警阈值");
+        en.put("raw_value",       "原始数值");
+        en.put("raw_unit",        "数值单位");
+        en.put("layer_idx",       "桑基层级");
+        en.put("q_min",           "最小值");
+        en.put("q1",              "下四分位");
+        en.put("q_median",        "中位数");
+        en.put("q3",              "上四分位");
+        en.put("q_max",           "最大值");
+        en.put("outliers",        "离群点");
         EN_TO_CN = Collections.unmodifiableMap(en);
 
         Map<String, String> layer = new HashMap<>();
@@ -131,6 +153,28 @@ public final class ColumnMapping {
             case "metric_value":
             case "mom_ratio":
             case "yoy_ratio":
+            // ----- ads_ext_* 派生 -----
+            case "revenue_share":
+            case "profit_share":
+            case "r_revenue":
+            case "r_margin":
+            case "r_qty":
+            case "r_rating":
+            case "r_low_marketing":
+            case "kpi_code":
+            case "kpi_name_cn":
+            case "kpi_value":
+            case "target_value":
+            case "warn_value":
+            case "raw_value":
+            case "raw_unit":
+            case "layer_idx":
+            case "q_min":
+            case "q1":
+            case "q_median":
+            case "q3":
+            case "q_max":
+            case "outliers":
                 return "ads";
             case "total_revenue":
             case "total_qty":

@@ -1,0 +1,4 @@
+# 占位文件 —— 保证 app/src/main/resources/static/ 目录存在
+#
+# Vue 编译产物（dist/*）由 scripts/build-all.sh 拷贝至此目录
+# 内容被 .gitignore 排除（除本文件外），不进版本库

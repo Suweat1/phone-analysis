@@ -458,6 +458,225 @@ object DwsToAdsJob {
          |LIMIT $TopN
          |""".stripMargin)
 
-    println("[dws-to-ads] 8 张 ADS 表已刷新")
+    // ============================================================
+    // 9~15) 扩展看板表 ads_ext_* —— 服务于多类型 ECharts
+    // ============================================================
+    buildExtTables(spark, dwd, dws, ads)
+
+    println("[dws-to-ads] 8 张业务 ADS + 7 张扩展 ADS 表已刷新")
+  }
+
+  /**
+   * 扩展看板的 7 张表：
+   *   ads_ext_brand_summary       品牌大盘（饼/雷达/漏斗）
+   *   ads_ext_kpi_gauge           全局 KPI（仪表盘）
+   *   ads_ext_brand_model_tree    品牌→机型（Treemap/Sunburst）
+   *   ads_ext_calendar_heat       日营收（日历热力）
+   *   ads_ext_brand_month_heat    品牌×月份毛利率（矩形热力 / 河流图）
+   *   ads_ext_sales_sankey        渠道→品牌→年龄段（桑基）
+   *   ads_ext_brand_price_box     品牌客单价（箱线）
+   *
+   * 抽出方法只是为了避免 main 太长；逻辑全部用 Spark SQL（与本 Job 风格一致）。
+   */
+  private def buildExtTables(spark: org.apache.spark.sql.SparkSession,
+                             dwd: String, dws: String, ads: String): Unit = {
+
+    // ---------- 9) ads_ext_brand_summary ----------
+    // 雷达 5 维：营收/毛利率/销量/评价/「低营销费率」均归一化到 0~1
+    spark.sql(
+      s"""
+         |INSERT OVERWRITE TABLE $ads.ads_ext_brand_summary
+         |WITH base AS (
+         |  SELECT
+         |    brand, total_revenue, total_qty, total_gross_profit,
+         |    gross_margin, marketing_ratio, avg_unit_price,
+         |    accessory_sales, warranty_sales, order_cnt, model_cnt
+         |  FROM $dws.dws_sales_by_brand
+         |),
+         |rating AS (
+         |  SELECT brand, AVG(avg_user_rating) AS avg_user_rating
+         |  FROM $dws.dws_sales_by_model GROUP BY brand
+         |),
+         |joined AS (
+         |  SELECT b.*, r.avg_user_rating
+         |  FROM base b LEFT JOIN rating r ON b.brand = r.brand
+         |),
+         |totals AS (
+         |  SELECT SUM(total_revenue) AS sum_rev, SUM(total_gross_profit) AS sum_gp
+         |  FROM joined
+         |),
+         |stats AS (
+         |  SELECT
+         |    MIN(total_revenue)    AS rv_min, MAX(total_revenue)    AS rv_max,
+         |    MIN(gross_margin)     AS gm_min, MAX(gross_margin)     AS gm_max,
+         |    MIN(total_qty)        AS q_min,  MAX(total_qty)        AS q_max,
+         |    MIN(avg_user_rating)  AS rt_min, MAX(avg_user_rating)  AS rt_max,
+         |    MIN(marketing_ratio)  AS mr_min, MAX(marketing_ratio)  AS mr_max
+         |  FROM joined
+         |)
+         |SELECT
+         |  j.brand,
+         |  j.total_revenue, j.total_qty, j.total_gross_profit,
+         |  j.gross_margin, j.marketing_ratio, j.avg_unit_price,
+         |  j.avg_user_rating, j.order_cnt, j.model_cnt,
+         |  CASE WHEN t.sum_rev = 0 THEN 0 ELSE j.total_revenue / t.sum_rev END        AS revenue_share,
+         |  CASE WHEN t.sum_gp  = 0 THEN 0 ELSE j.total_gross_profit / t.sum_gp END     AS profit_share,
+         |  CASE WHEN (s.rv_max - s.rv_min) = 0 THEN 0 ELSE (j.total_revenue   - s.rv_min) / (s.rv_max - s.rv_min) END AS r_revenue,
+         |  CASE WHEN (s.gm_max - s.gm_min) = 0 THEN 0 ELSE (j.gross_margin    - s.gm_min) / (s.gm_max - s.gm_min) END AS r_margin,
+         |  CASE WHEN (s.q_max  - s.q_min ) = 0 THEN 0 ELSE (j.total_qty       - s.q_min ) / (s.q_max  - s.q_min)  END AS r_qty,
+         |  CASE WHEN (s.rt_max - s.rt_min) = 0 THEN 0
+         |       WHEN j.avg_user_rating IS NULL THEN 0
+         |       ELSE (j.avg_user_rating - s.rt_min) / (s.rt_max - s.rt_min)
+         |  END                                                                          AS r_rating,
+         |  CASE WHEN (s.mr_max - s.mr_min) = 0 THEN 0 ELSE 1 - (j.marketing_ratio - s.mr_min) / (s.mr_max - s.mr_min) END AS r_low_marketing
+         |FROM joined j CROSS JOIN totals t CROSS JOIN stats s
+         |""".stripMargin)
+
+    // ---------- 10) ads_ext_kpi_gauge ----------
+    // 4 个全局 KPI 仪表盘项；target / warn 用经验值（避免重新引入配置项）
+    spark.sql(
+      s"""
+         |INSERT OVERWRITE TABLE $ads.ads_ext_kpi_gauge
+         |WITH g AS (
+         |  SELECT
+         |    SUM(total_revenue)      AS rev,
+         |    SUM(total_gross_profit) AS gp,
+         |    SUM(total_marketing)    AS mk,
+         |    SUM(accessory_sales)    AS acc,
+         |    SUM(warranty_sales)     AS war
+         |  FROM $dws.dws_sales_daily
+         |)
+         |SELECT 'gross_margin'      AS kpi_code, '整体毛利率'     AS kpi_name_cn,
+         |       CASE WHEN rev = 0 THEN 0 ELSE gp / rev END         AS kpi_value,
+         |       0.25                                               AS target_value,
+         |       0.15                                               AS warn_value,
+         |       CASE WHEN rev = 0 THEN 0 ELSE gp / rev END         AS raw_value,
+         |       '%'                                                AS raw_unit
+         |FROM g
+         |UNION ALL
+         |SELECT 'marketing_ratio',  '整体营销费率',
+         |       CASE WHEN rev = 0 THEN 0 ELSE mk / rev END,
+         |       0.05, 0.12,
+         |       CASE WHEN rev = 0 THEN 0 ELSE mk / rev END,
+         |       '%'
+         |FROM g
+         |UNION ALL
+         |SELECT 'accessory_attach', '配件附加率',
+         |       CASE WHEN rev = 0 THEN 0 ELSE acc / rev END,
+         |       0.10, 0.03,
+         |       CASE WHEN rev = 0 THEN 0 ELSE acc / rev END,
+         |       '%'
+         |FROM g
+         |UNION ALL
+         |SELECT 'warranty_attach',  '延保附加率',
+         |       CASE WHEN rev = 0 THEN 0 ELSE war / rev END,
+         |       0.08, 0.02,
+         |       CASE WHEN rev = 0 THEN 0 ELSE war / rev END,
+         |       '%'
+         |FROM g
+         |""".stripMargin)
+
+    // ---------- 11) ads_ext_brand_model_tree ----------
+    spark.sql(
+      s"""
+         |INSERT OVERWRITE TABLE $ads.ads_ext_brand_model_tree
+         |SELECT brand, model, total_revenue, total_gross_profit, gross_margin, total_qty
+         |FROM $dws.dws_sales_by_model
+         |""".stripMargin)
+
+    // ---------- 12) ads_ext_calendar_heat ----------
+    spark.sql(
+      s"""
+         |INSERT OVERWRITE TABLE $ads.ads_ext_calendar_heat
+         |SELECT sale_date, total_revenue, total_qty, gross_margin
+         |FROM $dws.dws_sales_daily
+         |""".stripMargin)
+
+    // ---------- 13) ads_ext_brand_month_heat ----------
+    spark.sql(
+      s"""
+         |INSERT OVERWRITE TABLE $ads.ads_ext_brand_month_heat
+         |SELECT
+         |  brand,
+         |  CONCAT(LPAD(CAST(sale_year AS STRING), 4, '0'), '-',
+         |         LPAD(CAST(sale_month AS STRING), 2, '0')) AS sale_ym,
+         |  SUM(revenue)                                  AS total_revenue,
+         |  SUM(gross_profit)                             AS total_gross_profit,
+         |  CASE WHEN SUM(revenue) = 0 THEN 0
+         |       ELSE SUM(gross_profit) / SUM(revenue)
+         |  END                                           AS gross_margin
+         |FROM $dwd.dwd_phone_sales
+         |GROUP BY brand, sale_year, sale_month
+         |""".stripMargin)
+
+    // ---------- 14) ads_ext_sales_sankey ----------
+    // 两层：渠道(promotion) → 品牌；品牌 → 年龄段
+    spark.sql(
+      s"""
+         |INSERT OVERWRITE TABLE $ads.ads_ext_sales_sankey
+         |SELECT 0 AS layer_idx, promotion AS source, brand AS target,
+         |       SUM(gross_profit) AS `value`
+         |FROM $dwd.dwd_phone_sales
+         |WHERE promotion IS NOT NULL AND gross_profit > 0
+         |GROUP BY promotion, brand
+         |HAVING SUM(gross_profit) > 0
+         |UNION ALL
+         |SELECT 1 AS layer_idx, brand AS source, age_group AS target,
+         |       SUM(gross_profit) AS `value`
+         |FROM $dwd.dwd_phone_sales
+         |WHERE age_group IS NOT NULL AND gross_profit > 0
+         |GROUP BY brand, age_group
+         |HAVING SUM(gross_profit) > 0
+         |""".stripMargin)
+
+    // ---------- 15) ads_ext_brand_price_box ----------
+    // 用 percentile_approx 算 5 数概括；离群点用 max 5 个 1.5*IQR 之外的值
+    spark.sql(
+      s"""
+         |INSERT OVERWRITE TABLE $ads.ads_ext_brand_price_box
+         |WITH q AS (
+         |  SELECT
+         |    brand,
+         |    PERCENTILE_APPROX(unit_price, 0.25) AS q1,
+         |    PERCENTILE_APPROX(unit_price, 0.50) AS q_median,
+         |    PERCENTILE_APPROX(unit_price, 0.75) AS q3
+         |  FROM $dwd.dwd_phone_sales
+         |  WHERE unit_price IS NOT NULL
+         |  GROUP BY brand
+         |),
+         |bounds AS (
+         |  SELECT brand, q1, q_median, q3,
+         |         q1 - 1.5 * (q3 - q1) AS lo,
+         |         q3 + 1.5 * (q3 - q1) AS hi
+         |  FROM q
+         |),
+         |inrange AS (
+         |  SELECT d.brand,
+         |         MIN(CASE WHEN d.unit_price BETWEEN b.lo AND b.hi THEN d.unit_price END) AS q_min,
+         |         MAX(CASE WHEN d.unit_price BETWEEN b.lo AND b.hi THEN d.unit_price END) AS q_max
+         |  FROM $dwd.dwd_phone_sales d JOIN bounds b ON d.brand = b.brand
+         |  WHERE d.unit_price IS NOT NULL
+         |  GROUP BY d.brand
+         |),
+         |outs AS (
+         |  SELECT brand,
+         |         CONCAT_WS(',', COLLECT_LIST(CAST(ROUND(unit_price, 2) AS STRING))) AS outliers
+         |  FROM (
+         |    SELECT d.brand, d.unit_price,
+         |           ROW_NUMBER() OVER (PARTITION BY d.brand ORDER BY d.unit_price) AS rn
+         |    FROM $dwd.dwd_phone_sales d JOIN bounds b ON d.brand = b.brand
+         |    WHERE d.unit_price IS NOT NULL
+         |      AND (d.unit_price < b.lo OR d.unit_price > b.hi)
+         |  ) t
+         |  WHERE rn <= 5
+         |  GROUP BY brand
+         |)
+         |SELECT
+         |  b.brand, ir.q_min, b.q1, b.q_median, b.q3, ir.q_max,
+         |  COALESCE(o.outliers, '') AS outliers
+         |FROM bounds b
+         |LEFT JOIN inrange ir ON b.brand = ir.brand
+         |LEFT JOIN outs    o  ON b.brand = o.brand
+         |""".stripMargin)
   }
 }

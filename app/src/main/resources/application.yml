@@ -13,7 +13,15 @@
 server:
   port: 8080
   servlet:
-    context-path: /api
+    # ┌───────────────────────────────────────────────────────────────┐
+    # │ context-path 保持根 "/"                                       │
+    # │   - REST/SSE 接口前缀 /api 由 WebMvcConfig.addPathPrefix 注入 │
+    # │     给所有 @RestController（详见 com.phone.app.config.WebMvc）│
+    # │   - Vue 编译产物（dist/）拷到 src/main/resources/static/，    │
+    # │     由 Spring 默认静态映射 + SpaFallbackController 兜底       │
+    # │   - 部署时 phone-analysis:8080/    → 看板首页                 │
+    # │              phone-analysis:8080/api/* → REST/SSE             │
+    # └───────────────────────────────────────────────────────────────┘
     # 纯 REST + SSE 应用，禁用 JSP servlet 注册。
     # 否则 Spring Boot embedded Tomcat 启动期会 init JspServlet → 需要
     # javax.servlet.jsp.JspFactory，而 hive-jdbc 排除链里我们已把
@@ -28,6 +36,17 @@ spring:
     name: phone-analysis-app
   profiles:
     active: prod
+
+  # ============ 静态资源（Vue 看板 dist 打进 classpath:/static/） ============
+  # SpringBoot 默认就会把 classpath:/static/ 映射到 /，无需 addResourceHandler。
+  # 这里只显式指定缓存策略：HTML/JS/CSS 1h 缓存，由前端文件名 hash 控制更新。
+  web:
+    resources:
+      static-locations: classpath:/static/
+      cache:
+        cachecontrol:
+          max-age: 3600
+          cache-public: true
 
   # ============ Jackson ============
   jackson:

@@ -46,6 +46,10 @@ package-lock.json
 yarn.lock
 .cache/
 
+# Vue 编译产物拷贝到 SpringBoot 的 static 由 scripts/build-all.sh 自动生成 —— 不进 git
+app/src/main/resources/static/*
+!app/src/main/resources/static/.gitkeep
+
 # ===== Python（预处理脚本） =====
 __pycache__/
 *.pyc
