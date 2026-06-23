@@ -217,11 +217,27 @@ beeline -u 'jdbc:hive2://phone-analysis:10000/default' -n bigdata
 0: jdbc:hive2://phone-analysis:10000/default> show databases;
 ```
 
-## 9. 创建项目库
+## 9. 创建项目库（Hive 侧 4 库，**默认无需手工执行**）
+
+> **执行环境**：以下 4 条 `CREATE DATABASE` 是 **Hive SQL**，不是 MySQL；需要通过 Beeline（HiveServer2）执行，**不要**在 `mysql` 客户端里跑。
+>
+> **通常不需要你手工执行**：`bash scripts/run-pipeline.sh --init` 调用的 `InitSchemaJob` 会幂等地跑 `spark-etl/src/main/resources/ddl/00-init-databases.sql`，把这 4 个库自动建好。本节保留是作为「手工兜底」参考。
+
+如确实需要手工建（例如想绕过 Spark 单独验证 Hive）：
+
+```bash
+# 进 Beeline，连本机 HiveServer2，用 bigdata 用户（hive-site.xml 已关 doAs）
+beeline -u 'jdbc:hive2://phone-analysis:10000/default' -n bigdata
+```
+
+然后在 Beeline 提示符里执行：
 
 ```sql
 CREATE DATABASE IF NOT EXISTS phone_ods;
 CREATE DATABASE IF NOT EXISTS phone_dwd;
 CREATE DATABASE IF NOT EXISTS phone_dws;
 CREATE DATABASE IF NOT EXISTS phone_ads;
+SHOW DATABASES;
 ```
+
+完整建表（`ods_*`/`dwd_*`/`dws_*`/`ads_*`）以及字段中英字典写入 MySQL，仍然由 `run-pipeline.sh --init` 统一负责，不要在 Beeline 里手工跑各层 `ddl/*.sql`，避免与 InitSchemaJob 产生分叉。

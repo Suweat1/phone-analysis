@@ -96,6 +96,8 @@ start_yarn () {
 }
 
 # --------------------- 5. Hive Metastore / 6. HS2 ---------------------
+# 注：metastore / hiveserver2 是同一组件 Hive 的两个子服务，统一归到 ${PA_LOG}/hive/
+# 子目录下而不是各起一个目录，所以不走 log_path helper（log_path foo → foo/foo.out）。
 start_metastore () {
   port_alive "$PORT_HIVE_METASTORE" && { msg_warn "metastore 已在 :$PORT_HIVE_METASTORE"; return 0; }
   msg_info "启动 hive metastore..."

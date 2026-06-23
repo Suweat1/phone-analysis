@@ -178,6 +178,31 @@ hdfs namenode -format
 
 > **重新格式化** 会让旧 DataNode 的 clusterID 对不上而启动失败。如需重置，先 `rm -rf /opt/bigdata/data/hadoop/{nn,dn,tmp}/*` 再格式化。
 
+### 6.1 排错 — DataNode 启动后立刻自杀 (`Incompatible clusterIDs`)
+
+**症状**：
+- `hdfs dfs -put` 报 `could only be written to 0 of the 1 minReplication nodes. There are 0 datanode(s) running`。
+- `jps` 看到 NameNode / SecondaryNameNode 在，但 **没有 DataNode**。
+- `/opt/bigdata/log/hadoop/hadoop-bigdata-datanode-*.log` 里出现：
+  ```
+  java.io.IOException: Incompatible clusterIDs in /opt/bigdata/data/hadoop/dn:
+    namenode clusterID = CID-xxxx; datanode clusterID = CID-yyyy
+  ```
+
+**原因**：之前跑过一次 `hdfs namenode -format`（可能是为了重装 / 清理 Hive metastore 时误清），NameNode 的 `nn/current/VERSION` 换成了新 clusterID，而 `dn/current/VERSION` 还留着旧 ID，握手失败，DataNode 直接 Exiting。
+
+**修法**（保留 NameNode 数据，仅清 DataNode）：
+
+```bash
+bash ~/phone-analysis/scripts/stop-all.sh --only hdfs
+rm -rf /opt/bigdata/data/hadoop/dn/*
+bash ~/phone-analysis/scripts/start-all.sh --only hdfs
+jps | grep -E 'NameNode|DataNode|SecondaryNameNode'   # 三个都要在
+hdfs dfsadmin -report | head -20                      # 期望 Live datanodes (1)
+```
+
+> **不要** 顺手把 `nn/` 也清掉再 `hdfs namenode -format` —— 会丢掉 HDFS 上所有现存数据（含 `/phone-analysis/raw` 的 parquet、Hive warehouse 数据文件）。仅当真的想重装整个 HDFS 时才整体清。
+
 ## 7. 启停
 
 ```bash

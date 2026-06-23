@@ -112,6 +112,27 @@ FLUSH PRIVILEGES;
 CREATE DATABASE phone_analysis DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 ```
 
+### 10.1 [必做] 初始化 16 张看板表
+
+`spark-etl` 的 `AdsToMysqlJob` 用 `SaveMode.Overwrite + truncate=true` 回写 MySQL，**前提是这些表已经存在**（否则会自动 CREATE 出无主键 / 无索引 / 字段类型推断不准的简化版，看板 SQL 会出问题）。
+`ColumnDictJob` 也会写 `ads_column_dict` —— 库不存在直接 `Unknown database 'phone_analysis'`。
+
+所以这一步**首次部署必做**。建库语句后立即跑：
+
+```bash
+mysql -uroot -p123456 phone_analysis \
+  < ~/phone-analysis/spark-etl/src/main/resources/ddl/05-mysql-ads.sql
+```
+
+执行成功后 `phone_analysis` 库下会有 16 张表（业务 8 + 扩展 7 + 字段字典 1），可校验：
+
+```bash
+mysql -uroot -p123456 -e "USE phone_analysis; SHOW TABLES;"
+# 期望看到 16 行：ads_profit_anomaly / ads_metric_trend / ... / ads_column_dict
+```
+
+> 这一步 **不写到 `run-pipeline.sh --init`** 也行（脚本会自动做幂等的 ensure，见 [scripts/README.md](../../scripts/README.md)），但单独跑一次 SQL 文件可保留主键、注释、字符集这些 Spark 自动建表带不出来的元信息，是推荐的标准首次部署路径。
+
 ## 11. 停止
 
 ```bash

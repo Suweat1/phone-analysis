@@ -85,6 +85,7 @@ ${PA_REPO}=~/phone-analysis     ${PA_BASE}=/opt/bigdata
 | `start-all.sh` 报 `等待端口 :XXX 超时` | 对应组件日志在 `/opt/bigdata/log/<组件>/*.out` | `tail -n 200 /opt/bigdata/log/<组件>/*.out` |
 | `stop-all.sh` 反复说 not running，但 jps 还在 | pid 文件丢了 + 进程名 pattern 不匹配 | `pkill -f <关键词>` 手动收尾 |
 | `run-pipeline.sh --init` 报 metastore connect refused | `metastore` 没起 / 没就绪 | `bash scripts/start-all.sh --only metastore` 然后等 30s |
+| `run-pipeline.sh` 在 hdfs put 阶段报 `0 datanode(s) running` | DataNode clusterID 与 NameNode 不匹配（之前 format 过 nn 但没清 dn） | 见 [docs/deploy/04-hadoop.md §6.1](../docs/deploy/04-hadoop.md#61-排错--datanode-启动后立刻自杀-incompatible-clusterids) |
 | `/api/health` 返回 502/404 | app jar 没构建 / Spring profile 错 | `tail /opt/bigdata/log/app/app.out` |
 | 改了密码业务代码不生效 | 仅改了 `lib/env.sh` 不够 | 同步改 `config/app/application.yml` / `config/spark-etl/application.properties` / `config/redis/redis.conf` |
 | metastore 启动卡死 / Beeline `recv_drop_table_with_environment_context` 长时间无响应 | KEY_CONSTRAINTS 无索引 + 启动期 ALTER ADD CONSTRAINT FK4 与 hive 连接抢锁（HIVE-21563） | `bash scripts/reset-hive-metastore.sh --yes`，详见 [docs/deploy/05-hive.md §6.1](../docs/deploy/05-hive.md#61-必做-给-key_constraints-加索引hive-21563) |
